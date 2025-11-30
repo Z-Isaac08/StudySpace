@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspaces   WorkspaceMember[]
+  sessions     Session[] @relation("SessionCreatedBy")
+  files        File[]
+}
+
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  tag         WorkspaceTag
+  inviteCode  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  sessions    Session[]
+  files       File[]
+}
+
+enum WorkspaceTag {
+  maths
+  info
+  physique
+  chimie
+  svt
+  langue
+  autre
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        MemberRole
+  joinedAt    DateTime @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  workspaceId  String
+  createdById  String
+  startedAt    DateTime
+  endedAt      DateTime?
+  duration     Int?
+  canvasState  Json?
+  editorState  Json?
+  createdAt    DateTime  @default(now())
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy    User      @relation("SessionCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id            String   @id @default(uuid())
+  workspaceId   String
+  uploadedById  String
+  name          String
+  size          Int
+  mimeType      String
+  url           String
+  uploadedAt    DateTime @default(now())
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
