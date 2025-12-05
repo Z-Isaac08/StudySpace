@@ -12,22 +12,28 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  avatar       String?  // URL de l'avatar de l'utilisateur
+  lastLoginAt  DateTime? // Dernière connexion
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  workspaces   WorkspaceMember[]
-  sessions     Session[] @relation("SessionCreatedBy")
-  files        File[]
+  workspaces        WorkspaceMember[]
+  sessions          Session[] @relation("SessionCreatedBy")
+  files             File[]
+  createdWorkspaces Workspace[] @relation("WorkspaceCreatedBy")
 }
 
 model Workspace {
   id          String   @id @default(uuid())
   name        String
+  description String?  // Description du workspace
   tag         WorkspaceTag
   inviteCode  String   @unique
+  createdById String   // Créateur du workspace
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdBy   User             @relation("WorkspaceCreatedBy", fields: [createdById], references: [id])
   members     WorkspaceMember[]
   sessions    Session[]
   files       File[]
@@ -54,6 +60,8 @@ model WorkspaceMember {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
 }
 
 enum MemberRole {
@@ -65,15 +73,20 @@ model Session {
   id           String    @id @default(uuid())
   workspaceId  String
   createdById  String
+  title        String?   // Titre de la session (ex: "TD Maths chapitre 3")
+  description  String?   // Notes rapides sur la session
   startedAt    DateTime
   endedAt      DateTime?
-  duration     Int?
-  canvasState  Json?
-  editorState  Json?
+  duration     Int?      // Durée en secondes
+  canvasState  Json?     // État du tableau blanc
+  editorState  Json?     // État de l'éditeur
   createdAt    DateTime  @default(now())
 
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy    User      @relation("SessionCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([createdById])
 }
 
 model File {
@@ -81,11 +94,13 @@ model File {
   workspaceId   String
   uploadedById  String
   name          String
-  size          Int
+  size          Int      // Taille en bytes
   mimeType      String
-  url           String
+  url           String   // URL Supabase Storage
   uploadedAt    DateTime @default(now())
 
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }

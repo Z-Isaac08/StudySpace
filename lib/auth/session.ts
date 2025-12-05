@@ -1,8 +1,3 @@
-/**
- * Authentication Helper Functions
- * Utils for getting current user in API routes and Server Components
- */
-
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 

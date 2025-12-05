@@ -1,51 +1,147 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
+# ================================
+# DEPENDENCIES
+# ================================
+node_modules/
 /.pnp
-.pnp.*
+.pnp.js
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# ================================
+# ENVIRONMENT VARIABLES
+# ================================
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# next.js
+# Keep example files
+!.env.example
+
+# ================================
+# NEXT.JS
+# ================================
 /.next/
 /out/
+.next
+next-env.d.ts
 
-# production
+# ================================
+# BUILD OUTPUTS
+# ================================
 /build
+/dist
+*.tsbuildinfo
 
-# misc
-.DS_Store
-*.pem
+# ================================
+# TESTING
+# ================================
+/coverage
+*.lcov
 
-# debug
+# ================================
+# PRISMA
+# ================================
+# Generated Prisma Client (custom output location)
+/lib/generated/prisma
+/generated/prisma
+/generated/
+
+# Database files (SQLite - not used but just in case)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ================================
+# LOGS
+# ================================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .pnpm-debug.log*
+lerna-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
-.env
+# ================================
+# OS FILES
+# ================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# Next.js / Nuxt / Vite / many frameworks
-.env.local
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# BUT keep the example/template files in git
-!.env.example
+# Linux
+*~
+.directory
+.Trash-*
 
-# vercel
+# ================================
+# IDE & EDITORS
+# ================================
+# VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ================================
+# TEMPORARY FILES
+# ================================
+*.tmp
+*.temp
+.cache/
+.temp/
+tmp/
+
+# ================================
+# VERCEL
+# ================================
 .vercel
 
-# typescript
+# ================================
+# TYPESCRIPT
+# ================================
 *.tsbuildinfo
-next-env.d.ts
 
-/lib/generated/prisma
+# ================================
+# MISC
+# ================================
+.turbo
+*.local
+*.pem
 
-/generated/prisma
+# Debug files
+debug.log
