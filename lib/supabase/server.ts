@@ -1,8 +1,3 @@
-/**
- * Supabase Server Client
- * For use in Server Components, API Routes, and Server Actions
- */
-
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

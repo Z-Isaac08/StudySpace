@@ -4,6 +4,8 @@ import {
   unauthorizedResponse,
   validationErrorResponse,
 } from "@/lib/api-response";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { LoginSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
@@ -32,23 +34,40 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return unauthorizedResponse("Email ou mot de passe incorrect");
+      return unauthorizedResponse(getAuthErrorMessage(error));
     }
 
     if (!data.user) {
       return errorResponse("Échec de la connexion", 500);
     }
 
-    return successResponse({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata.name,
+    // Create or update user profile in Prisma on first login
+    // This ensures user is only created after email confirmation
+    const user = await prisma.user.upsert({
+      where: { id: data.user.id },
+      update: {
+        email: data.user.email!,
+        name: data.user.user_metadata.name || "",
       },
+      create: {
+        id: data.user.id,
+        email: data.user.email!,
+        name: data.user.user_metadata.name || "",
+        passwordHash: "", // Managed by Supabase Auth
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+
+    return successResponse({
+      user,
       message: "Connexion réussie",
     });
   } catch (error: any) {
-    console.error("Login error:", error);
+    console.error("💥 [LOGIN] Unexpected error:", error);
     return errorResponse(error.message || "Erreur lors de la connexion", 500);
   }
 }

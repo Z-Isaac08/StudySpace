@@ -1,0 +1,279 @@
+"use client";
+
+import { MotionDiv } from "@/components/motion";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import axios from "axios";
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+
+function ResetPasswordForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  // Password strength check
+  const passwordStrength = {
+    length: password.length >= 8,
+    hasNumber: /\d/.test(password),
+    hasLetter: /[a-zA-Z]/.test(password),
+  };
+  const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    // Validate password strength
+    if (!isPasswordStrong) {
+      setError("Le mot de passe ne respecte pas les critères de sécurité");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await axios.post("/api/auth/reset-password", { password });
+      setSuccess(true);
+      setTimeout(() => router.push("/login"), 3000);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Une erreur est survenue. Veuillez réessayer"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <MotionDiv
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen flex items-center justify-center px-6 py-12 bg-neutral-50 dark:bg-neutral-950"
+      >
+        <Card className="w-full max-w-md p-8 text-center border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
+          <div className="mb-6 flex justify-center">
+            <div className="w-16 h-16 rounded-full bg-success-100 dark:bg-success-900/20 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-success-600 dark:text-success-400" />
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-3">
+            Mot de passe modifié !
+          </h1>
+
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+            Votre mot de passe a été réinitialisé avec succès.
+          </p>
+
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Redirection vers la page de connexion...
+          </p>
+        </Card>
+      </MotionDiv>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-neutral-50 dark:bg-neutral-950">
+      <MotionDiv
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
+            Nouveau mot de passe
+          </h1>
+          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+            Choisissez un mot de passe sécurisé
+          </p>
+        </div>
+
+        {/* Form Card */}
+        <Card className="p-6 sm:p-8 border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Error Alert */}
+            {error && (
+              <MotionDiv
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800"
+              >
+                <p className="text-sm text-error-700 dark:text-error-300 font-medium">
+                  {error}
+                </p>
+              </MotionDiv>
+            )}
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-neutral-700 dark:text-neutral-300"
+              >
+                Nouveau mot de passe
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="pl-10 pr-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+
+              {/* Password Strength Indicators */}
+              {password && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle2
+                      className={`h-4 w-4 ${
+                        passwordStrength.length
+                          ? "text-success-500"
+                          : "text-neutral-300"
+                      }`}
+                    />
+                    <span
+                      className={
+                        passwordStrength.length
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-neutral-500"
+                      }
+                    >
+                      Au moins 8 caractères
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle2
+                      className={`h-4 w-4 ${
+                        passwordStrength.hasLetter
+                          ? "text-success-500"
+                          : "text-neutral-300"
+                      }`}
+                    />
+                    <span
+                      className={
+                        passwordStrength.hasLetter
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-neutral-500"
+                      }
+                    >
+                      Contient une lettre
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle2
+                      className={`h-4 w-4 ${
+                        passwordStrength.hasNumber
+                          ? "text-success-500"
+                          : "text-neutral-300"
+                      }`}
+                    />
+                    <span
+                      className={
+                        passwordStrength.hasNumber
+                          ? "text-success-600 dark:text-success-400"
+                          : "text-neutral-500"
+                      }
+                    >
+                      Contient un chiffre
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="confirmPassword"
+                className="text-neutral-700 dark:text-neutral-300"
+              >
+                Confirmer le mot de passe
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className={`pl-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500 ${
+                    confirmPassword && password !== confirmPassword
+                      ? "border-error-500 focus:ring-error-500"
+                      : confirmPassword && password === confirmPassword
+                      ? "border-success-500 focus:ring-success-500"
+                      : ""
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-semibold bg-primary-600 hover:bg-primary-700 transition-all duration-200"
+              disabled={isLoading || !isPasswordStrong}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Modification...
+                </>
+              ) : (
+                "Réinitialiser le mot de passe"
+              )}
+            </Button>
+          </form>
+        </Card>
+      </MotionDiv>
+    </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}

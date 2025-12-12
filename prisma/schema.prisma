@@ -7,36 +7,49 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  avatar       String?  // URL de l'avatar de l'utilisateur
-  lastLoginAt  DateTime? // Dernière connexion
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+// ────────────────────────────────────────────────────────────
+// USERS & AUTH
+// ────────────────────────────────────────────────────────────
 
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String?   // Null si OAuth
+  name         String
+  avatar       String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
   workspaces        WorkspaceMember[]
-  sessions          Session[] @relation("SessionCreatedBy")
+  sessions          Session[]
   files             File[]
   createdWorkspaces Workspace[] @relation("WorkspaceCreatedBy")
+
+  @@map("users")
 }
 
-model Workspace {
-  id          String   @id @default(uuid())
-  name        String
-  description String?  // Description du workspace
-  tag         WorkspaceTag
-  inviteCode  String   @unique
-  createdById String   // Créateur du workspace
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ────────────────────────────────────────────────────────────
+// WORKSPACES & MEMBERS
+// ────────────────────────────────────────────────────────────
 
-  createdBy   User             @relation("WorkspaceCreatedBy", fields: [createdById], references: [id])
-  members     WorkspaceMember[]
-  sessions    Session[]
-  files       File[]
+model Workspace {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  tag         WorkspaceTag @default(autre)
+  inviteCode  String       @unique @default(cuid())
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  createdBy User              @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  members   WorkspaceMember[]
+  sessions  Session[]
+  files     File[]
+
+  @@map("workspaces")
 }
 
 enum WorkspaceTag {
@@ -45,23 +58,25 @@ enum WorkspaceTag {
   physique
   chimie
   svt
-  langue
+  langues
+  droit
   autre
 }
 
 model WorkspaceMember {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   userId      String
   workspaceId String
-  role        MemberRole
-  joinedAt    DateTime @default(now())
+  role        MemberRole @default(MEMBER)
+  joinedAt    DateTime   @default(now())
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
   @@index([userId])
   @@index([workspaceId])
+  @@map("workspace_members")
 }
 
 enum MemberRole {
@@ -69,38 +84,49 @@ enum MemberRole {
   MEMBER
 }
 
-model Session {
-  id           String    @id @default(uuid())
-  workspaceId  String
-  createdById  String
-  title        String?   // Titre de la session (ex: "TD Maths chapitre 3")
-  description  String?   // Notes rapides sur la session
-  startedAt    DateTime
-  endedAt      DateTime?
-  duration     Int?      // Durée en secondes
-  canvasState  Json?     // État du tableau blanc
-  editorState  Json?     // État de l'éditeur
-  createdAt    DateTime  @default(now())
+// ────────────────────────────────────────────────────────────
+// SESSIONS
+// ────────────────────────────────────────────────────────────
 
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy    User      @relation("SessionCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+model Session {
+  id          String    @id @default(uuid())
+  workspaceId String
+  createdById String
+  title       String?
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  duration    Int?      // Secondes, calculé automatiquement
+  canvasState Json?     // État du canvas (Konva/Fabric)
+  editorState Json?     // État de l'éditeur (TipTap/Yjs)
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([createdById])
+  @@index([startedAt])
+  @@map("sessions")
 }
 
-model File {
-  id            String   @id @default(uuid())
-  workspaceId   String
-  uploadedById  String
-  name          String
-  size          Int      // Taille en bytes
-  mimeType      String
-  url           String   // URL Supabase Storage
-  uploadedAt    DateTime @default(now())
+// ────────────────────────────────────────────────────────────
+// FILES
+// ────────────────────────────────────────────────────────────
 
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+model File {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  uploadedById String
+  name         String
+  size         Int      // Bytes
+  mimeType     String
+  url          String   // Supabase Storage URL
+  uploadedAt   DateTime @default(now())
+
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([uploadedById])
+  @@map("files")
 }

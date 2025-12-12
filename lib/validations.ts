@@ -10,7 +10,7 @@ import { z } from "zod";
 // ============================================
 
 export const CreateUserSchema = z.object({
-  email: z.string().email("Email invalide"),
+  email: z.email("Email invalide"),
   password: z
     .string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
@@ -18,13 +18,13 @@ export const CreateUserSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email("Email invalide"),
+  email: z.email("Email invalide"),
   password: z.string().min(1, "Le mot de passe est requis"),
 });
 
 export const UpdateUserSchema = z.object({
   name: z.string().min(2).optional(),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
 });
 
 // ============================================

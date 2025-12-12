@@ -3,7 +3,7 @@ import {
   successResponse,
   validationErrorResponse,
 } from "@/lib/api-response";
-import { prisma } from "@/lib/prisma";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createClient } from "@/lib/supabase/server";
 import { CreateUserSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
         data: {
           name,
         },
@@ -37,39 +38,30 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return errorResponse(authError.message, 400);
+      return errorResponse(getAuthErrorMessage(authError), 400);
     }
 
     if (!authData.user) {
       return errorResponse("Échec de la création du compte", 500);
     }
 
-    // Create user profile in Prisma
-    const user = await prisma.user.create({
-      data: {
-        id: authData.user.id,
-        email: authData.user.email!,
-        name,
-        passwordHash: "", // Managed by Supabase Auth
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
+    // Note: User profile in Prisma will be created on first login
+    // This avoids creating "zombie" users if email is never confirmed
 
     return successResponse(
       {
-        user,
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          name: authData.user.user_metadata.name,
+        },
         message:
           "Compte créé avec succès. Vérifiez votre email pour confirmer.",
       },
       201
     );
   } catch (error: any) {
-    console.error("Registration error:", error);
+    console.error("💥 [REGISTER] Unexpected error:", error);
     return errorResponse(error.message || "Erreur lors de l'inscription", 500);
   }
 }
