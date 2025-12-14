@@ -1,8 +1,16 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/stores/auth-store";
 import { ArrowLeft, FileQuestion } from "lucide-react";
 import Link from "next/link";
 
 export default function NotFound() {
+  const { isAuthenticated } = useAuth();
+
+  const homeUrl = isAuthenticated ? "/dashboard" : "/";
+  const homeText = isAuthenticated ? "Retour au dashboard" : "Retour à l'accueil";
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
@@ -16,9 +24,9 @@ export default function NotFound() {
       </p>
       <div className="mt-10 flex items-center justify-center gap-x-6">
         <Button asChild>
-          <Link href="/">
+          <Link href={homeUrl}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour à l'accueil
+            {homeText}
           </Link>
         </Button>
       </div>
