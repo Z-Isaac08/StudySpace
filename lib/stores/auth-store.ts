@@ -90,11 +90,16 @@ export const useAuthStore = create<AuthStore>()(
           try {
             await axios.post("/api/auth/logout");
 
+            // Clear auth state
             set({
               user: null,
               isAuthenticated: false,
               isLoading: false,
             });
+
+            // Clear workspace store
+            const { useWorkspaceStore } = await import("./workspace-store");
+            useWorkspaceStore.getState().clearWorkspaces();
           } catch (error: any) {
             set({ isLoading: false });
             throw new Error(
