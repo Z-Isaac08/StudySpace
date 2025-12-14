@@ -4,7 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/lib/stores/auth-store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function DashboardLayout({
   children,
@@ -13,24 +13,30 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, checkAuth, logout } = useAuth();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    const performAuthCheck = async () => {
+      await checkAuth();
+      setHasCheckedAuth(true);
+    };
+    performAuthCheck();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Only redirect after auth check is complete
+    if (hasCheckedAuth && !isLoading && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [hasCheckedAuth, isLoading, isAuthenticated, router]);
 
   const handleLogout = async () => {
     await logout();
     router.push("/");
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state - show while checking auth
+  if (!hasCheckedAuth || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -41,7 +47,7 @@ export default function DashboardLayout({
     );
   }
 
-  // Not authenticated - will redirect
+  // Not authenticated - will redirect (but wait for check)
   if (!isAuthenticated || !user) {
     return null;
   }
