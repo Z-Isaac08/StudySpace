@@ -39,6 +39,7 @@ export const WorkspaceTagSchema = z.enum([
   "svt",
   "langues",
   "droit",
+  "general",
   "autre",
 ]);
 

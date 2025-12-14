@@ -12,17 +12,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
+  Calculator,
   Clock,
+  Code2,
   Copy,
+  FileText,
+  FlaskRound as Flask,
   FolderKanban,
+  Atom,
+  Languages,
+  Scale,
   MoreVertical,
   Pencil,
   Play,
+  Leaf,
   Trash2,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
 
 export interface WorkspaceCardProps {
   id: string;
@@ -60,6 +69,18 @@ const tagColors: Record<string, string> = {
   droit: "bg-tag-droit/10 text-tag-droit border-tag-droit/20",
   general: "bg-tag-general/10 text-tag-general border-tag-general/20",
   autre: "bg-neutral-100 text-neutral-600 border-neutral-200",
+};
+
+const tagIcons: Record<string, LucideIcon> = {
+  maths: Calculator,
+  info: Code2,
+  physique: Atom,
+  chimie: Flask,
+  svt: Leaf,
+  langues: Languages,
+  droit: Scale,
+  general: FolderKanban,
+  autre: FileText,
 };
 
 export function WorkspaceCard({
@@ -110,7 +131,10 @@ export function WorkspaceCard({
               tagColors[tag]?.split(" ")[0] || "bg-neutral-100"
             )}
           >
-            <FolderKanban className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
+            {(() => {
+              const Icon = tagIcons[tag] || FolderKanban;
+              return <Icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />;
+            })()}
           </div>
 
           {/* Content */}

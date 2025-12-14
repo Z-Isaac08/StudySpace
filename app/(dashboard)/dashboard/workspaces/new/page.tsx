@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -19,24 +25,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CreateWorkspaceSchema, CreateWorkspaceInput } from "@/lib/validations";
+import { CreateWorkspaceInput, CreateWorkspaceSchema } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Atom,
+  Calculator,
+  Code2,
+  FlaskRound as Flask,
+  FolderKanban,
+  Languages,
+  Leaf,
+  Loader2,
+  Scale,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-const tagOptions = [
-  { value: "maths", label: "Mathématiques", icon: "📐" },
-  { value: "info", label: "Informatique", icon: "💻" },
-  { value: "physique", label: "Physique", icon: "⚛️" },
-  { value: "chimie", label: "Chimie", icon: "🧪" },
-  { value: "svt", label: "SVT", icon: "🌿" },
-  { value: "langues", label: "Langues", icon: "🌍" },
-  { value: "droit", label: "Droit", icon: "⚖️" },
-  { value: "general", label: "Général", icon: "📚" },
+const tagOptions: Array<{ value: string; label: string; Icon: LucideIcon }> = [
+  { value: "maths", label: "Mathématiques", Icon: Calculator },
+  { value: "info", label: "Informatique", Icon: Code2 },
+  { value: "physique", label: "Physique", Icon: Atom },
+  { value: "chimie", label: "Chimie", Icon: Flask },
+  { value: "svt", label: "SVT", Icon: Leaf },
+  { value: "langues", label: "Langues", Icon: Languages },
+  { value: "droit", label: "Droit", Icon: Scale },
+  { value: "general", label: "Général", Icon: FolderKanban },
 ];
 
 export default function NewWorkspacePage() {
@@ -61,9 +79,7 @@ export default function NewWorkspacePage() {
       const workspace = response.data.data;
       router.push(`/dashboard/workspace/${workspace.id}`);
     } catch (err: any) {
-      setError(
-        err.response?.data?.error || "Impossible de créer le workspace"
-      );
+      setError(err.response?.data?.error || "Impossible de créer le workspace");
     } finally {
       setIsSubmitting(false);
     }
@@ -85,8 +101,8 @@ export default function NewWorkspacePage() {
         <CardHeader>
           <CardTitle>Créer un workspace</CardTitle>
           <CardDescription>
-            Créez un nouvel espace de travail collaboratif pour réviser avec
-            vos camarades.
+            Créez un nouvel espace de travail collaboratif pour réviser avec vos
+            camarades.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,14 +146,17 @@ export default function NewWorkspacePage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {tagOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <span className="flex items-center gap-2">
-                              <span>{option.icon}</span>
-                              <span>{option.label}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        {tagOptions.map((option) => {
+                          const Icon = option.Icon;
+                          return (
+                            <SelectItem key={option.value} value={option.value}>
+                              <span className="flex items-center gap-2">
+                                <Icon className="h-4 w-4" />
+                                <span>{option.label}</span>
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormDescription>
