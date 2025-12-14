@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
         name,
         tag,
         inviteCode,
+        createdById: user.id,
         members: {
           create: {
             userId: user.id,

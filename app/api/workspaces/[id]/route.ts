@@ -83,12 +83,23 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     // Check if user is member
-    const isMember = workspace.members.some((m) => m.userId === user.id);
-    if (!isMember) {
+    const userMembership = workspace.members.find((m) => m.userId === user.id);
+    if (!userMembership) {
       return forbiddenResponse("Vous n'êtes pas membre de ce workspace");
     }
 
-    return successResponse(workspace);
+    // Add _count for convenience
+    const _count = {
+      members: workspace.members.length,
+      sessions: workspace.sessions.length,
+      files: workspace.files.length,
+    };
+
+    return successResponse({
+      ...workspace,
+      userRole: userMembership.role,
+      _count,
+    });
   } catch (error: any) {
     console.error("Get workspace error:", error);
     return errorResponse(error.message, 500);
