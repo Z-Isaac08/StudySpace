@@ -1,19 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { WorkspaceCard, WorkspaceCardProps } from "@/components/workspace/WorkspaceCard";
-import { FolderKanban, Plus, Search, UserPlus } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +11,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  WorkspaceCard,
+  WorkspaceCardProps,
+} from "@/components/workspace/WorkspaceCard";
+import axios from "axios";
+import { FolderKanban, Plus, Search, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const tagOptions = [
   { value: "all", label: "Toutes les matières" },
@@ -38,23 +41,57 @@ const tagOptions = [
   { value: "general", label: "Général" },
 ];
 
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<WorkspaceCardProps[]>([]);
-  const [filteredWorkspaces, setFilteredWorkspaces] = useState<WorkspaceCardProps[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 
-  // Fetch workspaces
+  // Fetch workspaces with server-side filtering and pagination
   useEffect(() => {
     async function fetchWorkspaces() {
+      setIsLoading(true);
       try {
-        const { data } = await axios.get("/api/workspaces");
-        setWorkspaces(data.data || []);
+        const params = new URLSearchParams({
+          page: pagination.page.toString(),
+          limit: pagination.limit.toString(),
+        });
+
+        if (tagFilter !== "all") {
+          params.append("tag", tagFilter);
+        }
+
+        if (search) {
+          params.append("search", search);
+        }
+
+        const { data } = await axios.get(
+          `/api/workspaces?${params.toString()}`
+        );
+        setWorkspaces(data.data.data || []);
+        setPagination(data.data.pagination);
       } catch (error) {
         console.error("Failed to fetch workspaces:", error);
       } finally {
@@ -63,26 +100,36 @@ export default function WorkspacesPage() {
     }
 
     fetchWorkspaces();
-  }, []);
+  }, [pagination.page, search, tagFilter]);
 
-  // Filter workspaces
+  // Debounced search
   useEffect(() => {
-    let filtered = [...workspaces];
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 on search
+    }, 300);
 
-    // Search filter
-    if (search) {
-      filtered = filtered.filter((w) =>
-        w.name.toLowerCase().includes(search.toLowerCase())
-      );
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset to page 1 when filter changes
+  const handleTagFilterChange = (value: string) => {
+    setTagFilter(value);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
     }
+  };
 
-    // Tag filter
-    if (tagFilter !== "all") {
-      filtered = filtered.filter((w) => w.tag === tagFilter);
+  const handlePreviousPage = () => {
+    if (pagination.hasPreviousPage) {
+      setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
     }
-
-    setFilteredWorkspaces(filtered);
-  }, [workspaces, search, tagFilter]);
+  };
 
   // Handle delete
   const handleDelete = async (id: string) => {
@@ -144,7 +191,8 @@ export default function WorkspacesPage() {
               <DialogHeader>
                 <DialogTitle>Rejoindre un workspace</DialogTitle>
                 <DialogDescription>
-                  Entrez le code d'invitation pour rejoindre un workspace existant.
+                  Entrez le code d'invitation pour rejoindre un workspace
+                  existant.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -196,12 +244,12 @@ export default function WorkspacesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Rechercher un workspace..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-9"
           />
         </div>
-        <Select value={tagFilter} onValueChange={setTagFilter}>
+        <Select value={tagFilter} onValueChange={handleTagFilterChange}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Filtrer par matière" />
           </SelectTrigger>
@@ -222,19 +270,16 @@ export default function WorkspacesPage() {
             <Card key={i} className="h-40 animate-pulse bg-muted" />
           ))}
         </div>
-      ) : filteredWorkspaces.length > 0 ? (
+      ) : workspaces.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredWorkspaces.map((workspace, index) => (
+          {workspaces.map((workspace, index) => (
             <div
               key={workspace.id}
               style={{
-                animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+                animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`,
               }}
             >
-              <WorkspaceCard
-                {...workspace}
-                onDelete={handleDelete}
-              />
+              <WorkspaceCard {...workspace} onDelete={handleDelete} />
             </div>
           ))}
         </div>
@@ -251,7 +296,7 @@ export default function WorkspacesPage() {
               variant="outline"
               className="mt-4"
               onClick={() => {
-                setSearch("");
+                setSearchInput("");
                 setTagFilter("all");
               }}
             >
@@ -287,6 +332,33 @@ export default function WorkspacesPage() {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Pagination controls */}
+      {!isLoading && workspaces.length > 0 && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            Page {pagination.page} sur {pagination.totalPages} ({pagination.total} workspace{pagination.total > 1 ? "s" : ""})
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={!pagination.hasPreviousPage}
+            >
+              Précédent
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={!pagination.hasNextPage}
+            >
+              Suivant
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
