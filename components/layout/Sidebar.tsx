@@ -74,8 +74,8 @@ export function Sidebar({ onLogout }: SidebarProps) {
           {/* Create Workspace Button */}
           <div className="pt-4">
             <Link href="/dashboard/workspaces/new">
-              <Button className="w-full gap-2" size="sm">
-                <Plus className="h-4 w-4" />
+              <Button className="w-full gap-2 group/create" size="sm">
+                <Plus className="h-4 w-4 transition-transform duration-200 group-hover/create:rotate-90" />
                 Nouveau workspace
               </Button>
             </Link>

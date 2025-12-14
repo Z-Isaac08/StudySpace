@@ -224,12 +224,18 @@ export default function WorkspacesPage() {
         </div>
       ) : filteredWorkspaces.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredWorkspaces.map((workspace) => (
-            <WorkspaceCard
+          {filteredWorkspaces.map((workspace, index) => (
+            <div
               key={workspace.id}
-              {...workspace}
-              onDelete={handleDelete}
-            />
+              style={{
+                animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+              }}
+            >
+              <WorkspaceCard
+                {...workspace}
+                onDelete={handleDelete}
+              />
+            </div>
           ))}
         </div>
       ) : workspaces.length > 0 ? (

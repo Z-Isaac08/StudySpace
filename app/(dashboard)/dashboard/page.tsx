@@ -73,15 +73,18 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute right-0 top-0 h-20 w-20 translate-x-8 -translate-y-8 rounded-full bg-primary/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Workspaces
             </CardTitle>
-            <FolderKanban className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-lg bg-primary/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <FolderKanban className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="relative z-10">
+            <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
               {isLoading ? "-" : stats?.totalWorkspaces || 0}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -90,15 +93,18 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute right-0 top-0 h-20 w-20 translate-x-8 -translate-y-8 rounded-full bg-success/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Collaborateurs
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-lg bg-success/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Users className="h-4 w-4 text-success" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="relative z-10">
+            <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
               {isLoading ? "-" : stats?.totalMembers || 0}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -107,15 +113,18 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="relative overflow-hidden group hover:shadow-md transition-all duration-300">
+          <div className="absolute right-0 top-0 h-20 w-20 translate-x-8 -translate-y-8 rounded-full bg-info/10 blur-2xl transition-transform duration-500 group-hover:scale-150" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Sessions
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-lg bg-info/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+              <Clock className="h-4 w-4 text-info" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="relative z-10">
+            <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
               {isLoading ? "-" : stats?.totalSessions || 0}
             </div>
             <p className="text-xs text-muted-foreground">
