@@ -20,11 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  WorkspaceCard,
-  WorkspaceCardProps,
-} from "@/components/workspace/WorkspaceCard";
-import axios from "axios";
+import { WorkspaceCard } from "@/components/workspace/WorkspaceCard";
+import { useWorkspaces } from "@/lib/stores/workspace-store";
 import { FolderKanban, Plus, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -41,29 +38,23 @@ const tagOptions = [
   { value: "general", label: "Général" },
 ];
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
 export default function WorkspacesPage() {
-  const [workspaces, setWorkspaces] = useState<WorkspaceCardProps[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Use workspace store
+  const {
+    workspaces,
+    pagination,
+    isLoading,
+    error,
+    fetchWorkspaces,
+    deleteWorkspace,
+    joinWorkspace,
+  } = useWorkspaces();
+
+  // Local UI state
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [tagFilter, setTagFilter] = useState("all");
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPreviousPage: false,
-  });
+  const [page, setPage] = useState(1);
   const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -71,42 +62,24 @@ export default function WorkspacesPage() {
 
   // Fetch workspaces with server-side filtering and pagination
   useEffect(() => {
-    async function fetchWorkspaces() {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: pagination.page.toString(),
-          limit: pagination.limit.toString(),
-        });
+    const params: any = { page, limit: 20 };
 
-        if (tagFilter !== "all") {
-          params.append("tag", tagFilter);
-        }
-
-        if (search) {
-          params.append("search", search);
-        }
-
-        const { data } = await axios.get(
-          `/api/workspaces?${params.toString()}`
-        );
-        setWorkspaces(data.data.data || []);
-        setPagination(data.data.pagination);
-      } catch (error) {
-        console.error("Failed to fetch workspaces:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (tagFilter !== "all") {
+      params.tag = tagFilter;
     }
 
-    fetchWorkspaces();
-  }, [pagination.page, search, tagFilter]);
+    if (search) {
+      params.search = search;
+    }
+
+    fetchWorkspaces(params);
+  }, [page, search, tagFilter, fetchWorkspaces]);
 
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput);
-      setPagination((prev) => ({ ...prev, page: 1 })); // Reset to page 1 on search
+      setPage(1); // Reset to page 1 on search
     }, 300);
 
     return () => clearTimeout(timer);
@@ -115,19 +88,19 @@ export default function WorkspacesPage() {
   // Reset to page 1 when filter changes
   const handleTagFilterChange = (value: string) => {
     setTagFilter(value);
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPage(1);
   };
 
   // Pagination handlers
   const handleNextPage = () => {
-    if (pagination.hasNextPage) {
-      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
+    if (pagination?.hasNextPage) {
+      setPage((prev) => prev + 1);
     }
   };
 
   const handlePreviousPage = () => {
-    if (pagination.hasPreviousPage) {
-      setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
+    if (pagination?.hasPreviousPage) {
+      setPage((prev) => prev - 1);
     }
   };
 
@@ -138,8 +111,7 @@ export default function WorkspacesPage() {
     }
 
     try {
-      await axios.delete(`/api/workspaces/${id}`);
-      setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+      await deleteWorkspace(id);
     } catch (error) {
       console.error("Failed to delete workspace:", error);
     }
@@ -151,17 +123,12 @@ export default function WorkspacesPage() {
     setJoinError("");
 
     try {
-      const { data } = await axios.post("/api/workspaces/join", {
-        inviteCode: joinCode.toUpperCase(),
-      });
-
-      // Add the new workspace to the list
-      setWorkspaces((prev) => [data.data, ...prev]);
+      await joinWorkspace(joinCode);
       setJoinCode("");
       setJoinDialogOpen(false);
     } catch (error: any) {
       setJoinError(
-        error.response?.data?.error || "Impossible de rejoindre le workspace"
+        error.message || "Impossible de rejoindre le workspace"
       );
     } finally {
       setIsJoining(false);
@@ -335,7 +302,7 @@ export default function WorkspacesPage() {
       )}
 
       {/* Pagination controls */}
-      {!isLoading && workspaces.length > 0 && pagination.totalPages > 1 && (
+      {!isLoading && workspaces.length > 0 && pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between border-t pt-4">
           <p className="text-sm text-muted-foreground">
             Page {pagination.page} sur {pagination.totalPages} ({pagination.total} workspace{pagination.total > 1 ? "s" : ""})

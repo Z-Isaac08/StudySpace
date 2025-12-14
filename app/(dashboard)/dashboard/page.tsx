@@ -3,10 +3,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/stores/auth-store";
+import { useWorkspaces } from "@/lib/stores/workspace-store";
 import { Clock, FolderKanban, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import axios from "axios";
 
 interface WorkspaceStats {
   totalWorkspaces: number;
@@ -25,39 +25,33 @@ interface WorkspaceStats {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { workspaces, pagination, isLoading: workspacesLoading, fetchWorkspaces } = useWorkspaces();
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchStats() {
-      try {
-        const { data } = await axios.get("/api/workspaces?limit=100");
-        const workspaces = data.data.data || [];
+    // Fetch workspaces with high limit for stats
+    fetchWorkspaces({ limit: 100 });
+  }, [fetchWorkspaces]);
 
-        const totalMembers = workspaces.reduce(
-          (acc: number, w: any) => acc + (w._count?.members || 0),
-          0
-        );
-        const totalSessions = workspaces.reduce(
-          (acc: number, w: any) => acc + (w._count?.sessions || 0),
-          0
-        );
+  useEffect(() => {
+    if (!workspacesLoading && workspaces.length >= 0) {
+      const totalMembers = workspaces.reduce(
+        (acc, w) => acc + (w._count?.members || 0),
+        0
+      );
+      const totalSessions = workspaces.reduce(
+        (acc, w) => acc + (w._count?.sessions || 0),
+        0
+      );
 
-        setStats({
-          totalWorkspaces: data.data.pagination?.total || workspaces.length,
-          totalMembers,
-          totalSessions,
-          recentWorkspaces: workspaces.slice(0, 3),
-        });
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
+      setStats({
+        totalWorkspaces: pagination?.total || workspaces.length,
+        totalMembers,
+        totalSessions,
+        recentWorkspaces: workspaces.slice(0, 3),
+      });
     }
-
-    fetchStats();
-  }, []);
+  }, [workspaces, workspacesLoading, pagination]);
 
   const firstName = user?.name?.split(" ")[0] || "utilisateur";
 
@@ -85,7 +79,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
-              {isLoading ? "-" : stats?.totalWorkspaces || 0}
+              {workspacesLoading ? "-" : stats?.totalWorkspaces || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Espaces de travail actifs
@@ -105,7 +99,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
-              {isLoading ? "-" : stats?.totalMembers || 0}
+              {workspacesLoading ? "-" : stats?.totalMembers || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Membres dans vos workspaces
@@ -125,7 +119,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-2xl font-bold transition-all duration-300 group-hover:scale-105">
-              {isLoading ? "-" : stats?.totalSessions || 0}
+              {workspacesLoading ? "-" : stats?.totalSessions || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Sessions de révision
@@ -145,7 +139,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {isLoading ? (
+        {workspacesLoading ? (
           <div className="grid gap-4 md:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
