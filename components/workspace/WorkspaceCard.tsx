@@ -11,7 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 import {
+  Atom,
   Calculator,
   Clock,
   Code2,
@@ -19,19 +21,17 @@ import {
   FileText,
   FlaskRound as Flask,
   FolderKanban,
-  Atom,
   Languages,
-  Scale,
+  Leaf,
   MoreVertical,
   Pencil,
   Play,
-  Leaf,
+  Scale,
   Trash2,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
 
 export interface WorkspaceCardProps {
   id: string;
@@ -106,17 +106,25 @@ export function WorkspaceCard({
     }
   };
 
+  const focusRingClasses =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded";
+
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-l-4"
-      style={{ borderLeftColor: `var(--tag-${tag})` }}>
+    <Card
+      className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-l-4"
+      style={{ borderLeftColor: `var(--tag-${tag})` }}
+    >
       {/* Background gradient effect on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary-50/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute inset-0 bg-linear-to-br from-transparent via-transparent to-primary-50/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Tag badge */}
       <div className="absolute right-3 top-3 z-10">
         <Badge
           variant="outline"
-          className={cn("text-xs font-medium transition-all duration-200 group-hover:scale-105", tagColors[tag] || tagColors.autre)}
+          className={cn(
+            "text-xs font-medium transition-all duration-200 group-hover:scale-105",
+            tagColors[tag] || tagColors.autre
+          )}
         >
           {tagLabels[tag] || tag}
         </Badge>
@@ -133,13 +141,21 @@ export function WorkspaceCard({
           >
             {(() => {
               const Icon = tagIcons[tag] || FolderKanban;
-              return <Icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />;
+              return (
+                <Icon
+                  className="h-6 w-6 transition-transform duration-300 group-hover:scale-110"
+                  aria-hidden="true"
+                />
+              );
             })()}
           </div>
 
           {/* Content */}
           <div className="min-w-0 flex-1 pr-8">
-            <Link href={`/dashboard/workspace/${id}`}>
+            <Link
+              href={`/dashboard/workspace/${id}`}
+              className={focusRingClasses}
+            >
               <h3 className="truncate text-lg font-semibold hover:text-primary transition-colors duration-200">
                 {name}
               </h3>
@@ -148,11 +164,17 @@ export function WorkspaceCard({
             {/* Stats with animated icons */}
             <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1 transition-colors duration-200 group-hover:text-foreground">
-                <Users className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                <Users
+                  className="h-4 w-4 transition-transform duration-200 group-hover:scale-110"
+                  aria-hidden="true"
+                />
                 {_count.members} membre{_count.members > 1 ? "s" : ""}
               </span>
               <span className="flex items-center gap-1 transition-colors duration-200 group-hover:text-foreground">
-                <Clock className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                <Clock
+                  className="h-4 w-4 transition-transform duration-200 group-hover:scale-110"
+                  aria-hidden="true"
+                />
                 {_count.sessions} session{_count.sessions > 1 ? "s" : ""}
               </span>
             </div>
@@ -170,16 +192,30 @@ export function WorkspaceCard({
             copied && "text-success-500"
           )}
           onClick={handleCopyInviteCode}
+          aria-label="Copier le code d'invitation"
+          aria-pressed={copied}
         >
-          <Copy className={cn("h-3 w-3 transition-transform duration-200", copied && "scale-125")} />
+          <Copy
+            className={cn(
+              "h-3 w-3 transition-transform duration-200",
+              copied && "scale-125"
+            )}
+            aria-hidden="true"
+          />
           {copied ? "Copié !" : inviteCode}
         </Button>
 
         <div className="flex items-center gap-2">
           {/* Start session button with hover effect */}
-          <Link href={`/dashboard/workspace/${id}`}>
+          <Link
+            href={`/dashboard/workspace/${id}`}
+            className={focusRingClasses}
+          >
             <Button size="sm" className="gap-2 group/btn">
-              <Play className="h-4 w-4 transition-transform duration-200 group-hover/btn:scale-110" />
+              <Play
+                className="h-4 w-4 transition-transform duration-200 group-hover/btn:scale-110"
+                aria-hidden="true"
+              />
               Ouvrir
             </Button>
           </Link>
@@ -188,8 +224,12 @@ export function WorkspaceCard({
           {userRole === "OWNER" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:rotate-90 transition-transform duration-300">
-                  <MoreVertical className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:rotate-90 transition-transform duration-300"
+                >
+                  <MoreVertical className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -198,7 +238,7 @@ export function WorkspaceCard({
                     href={`/dashboard/workspace/${id}/settings`}
                     className="flex items-center gap-2"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" aria-hidden="true" />
                     Modifier
                   </Link>
                 </DropdownMenuItem>
@@ -207,7 +247,7 @@ export function WorkspaceCard({
                   onClick={handleDelete}
                   className="text-error-500 focus:bg-error-50 focus:text-error-600"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
                   Supprimer
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -25,7 +25,12 @@ interface WorkspaceStats {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { workspaces, pagination, isLoading: workspacesLoading, fetchWorkspaces } = useWorkspaces();
+  const {
+    workspaces,
+    pagination,
+    isLoading: workspacesLoading,
+    fetchWorkspaces,
+  } = useWorkspaces();
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
 
   useEffect(() => {
@@ -74,7 +79,10 @@ export default function DashboardPage() {
               Workspaces
             </CardTitle>
             <div className="rounded-lg bg-primary/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-              <FolderKanban className="h-4 w-4 text-primary" />
+              <FolderKanban
+                className="h-4 w-4 text-primary"
+                aria-hidden="true"
+              />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
@@ -94,7 +102,7 @@ export default function DashboardPage() {
               Collaborateurs
             </CardTitle>
             <div className="rounded-lg bg-success/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-              <Users className="h-4 w-4 text-success" />
+              <Users className="h-4 w-4 text-success" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
@@ -114,7 +122,7 @@ export default function DashboardPage() {
               Sessions
             </CardTitle>
             <div className="rounded-lg bg-info/10 p-2 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-              <Clock className="h-4 w-4 text-info" />
+              <Clock className="h-4 w-4 text-info" aria-hidden="true" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
@@ -140,7 +148,15 @@ export default function DashboardPage() {
         </div>
 
         {workspacesLoading ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="grid gap-4 md:grid-cols-3"
+          >
+            <span className="sr-only">
+              Chargement des workspaces en cours...
+            </span>
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
                 <CardContent className="p-6">
@@ -156,6 +172,7 @@ export default function DashboardPage() {
               <Link
                 key={workspace.id}
                 href={`/dashboard/workspace/${workspace.id}`}
+                className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
               >
                 <Card className="cursor-pointer transition-shadow hover:shadow-md">
                   <CardContent className="p-6">
@@ -165,6 +182,7 @@ export default function DashboardPage() {
                       >
                         <FolderKanban
                           className={`h-5 w-5 text-tag-${workspace.tag}`}
+                          aria-hidden="true"
                         />
                       </div>
                       <div>
@@ -186,7 +204,10 @@ export default function DashboardPage() {
           <Card className="p-12 text-center">
             <div className="mx-auto max-w-md">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                <FolderKanban className="h-8 w-8 text-muted-foreground" />
+                <FolderKanban
+                  className="h-8 w-8 text-muted-foreground"
+                  aria-hidden="true"
+                />
               </div>
               <h3 className="text-xl font-semibold">
                 Aucun workspace pour l'instant
@@ -197,7 +218,7 @@ export default function DashboardPage() {
               </p>
               <Link href="/dashboard/workspaces/new">
                 <Button className="mt-6 gap-2">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4" aria-hidden="true" />
                   Créer un workspace
                 </Button>
               </Link>

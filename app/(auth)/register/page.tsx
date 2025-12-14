@@ -27,7 +27,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Password strength check
   const passwordStrength = {
@@ -55,6 +57,9 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password);
+      setSuccess(
+        "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
+      );
       // Redirect to verify-email if email confirmation is enabled
       // Otherwise go to dashboard (Supabase will auto-login if confirmation disabled)
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
@@ -87,9 +92,26 @@ export default function RegisterPage() {
       {/* Form Card */}
       <Card className="p-6 sm:p-8 border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Success Alert */}
+          {success && (
+            <MotionDiv
+              role="status"
+              aria-live="polite"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 rounded-lg bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800"
+            >
+              <p className="text-sm text-success-700 dark:text-success-300 font-medium">
+                {success}
+              </p>
+            </MotionDiv>
+          )}
+
           {/* Error Alert */}
           {error && (
             <MotionDiv
+              role="alert"
+              aria-live="assertive"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="p-4 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800"
@@ -109,7 +131,10 @@ export default function RegisterPage() {
               Nom complet
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <User
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400"
+                aria-hidden="true"
+              />
               <Input
                 id="name"
                 type="text"
@@ -132,7 +157,10 @@ export default function RegisterPage() {
               Email
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400"
+                aria-hidden="true"
+              />
               <Input
                 id="email"
                 type="email"
@@ -155,7 +183,10 @@ export default function RegisterPage() {
               Mot de passe
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Lock
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400"
+                aria-hidden="true"
+              />
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -169,12 +200,18 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                aria-label={
+                  showPassword
+                    ? "Masquer le mot de passe"
+                    : "Afficher le mot de passe"
+                }
+                aria-pressed={showPassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded"
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
+                  <EyeOff className="h-5 w-5" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-5 w-5" />
+                  <Eye className="h-5 w-5" aria-hidden="true" />
                 )}
               </button>
             </div>
@@ -249,10 +286,13 @@ export default function RegisterPage() {
               Confirmer le mot de passe
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Lock
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400"
+                aria-hidden="true"
+              />
               <Input
                 id="confirmPassword"
-                type={showPassword ? "text" : "password"}
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

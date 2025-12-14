@@ -127,9 +127,7 @@ export default function WorkspacesPage() {
       setJoinCode("");
       setJoinDialogOpen(false);
     } catch (error: any) {
-      setJoinError(
-        error.message || "Impossible de rejoindre le workspace"
-      );
+      setJoinError(error.message || "Impossible de rejoindre le workspace");
     } finally {
       setIsJoining(false);
     }
@@ -175,7 +173,13 @@ export default function WorkspacesPage() {
                   />
                 </div>
                 {joinError && (
-                  <p className="text-sm text-error-500">{joinError}</p>
+                  <p
+                    role="alert"
+                    aria-live="assertive"
+                    className="text-sm text-error-500"
+                  >
+                    {joinError}
+                  </p>
                 )}
               </div>
               <DialogFooter>
@@ -208,7 +212,10 @@ export default function WorkspacesPage() {
       {/* Filters */}
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             placeholder="Rechercher un workspace..."
             value={searchInput}
@@ -232,7 +239,13 @@ export default function WorkspacesPage() {
 
       {/* Workspaces grid */}
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <span className="sr-only">Chargement des workspaces en cours...</span>
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="h-40 animate-pulse bg-muted" />
           ))}
@@ -254,7 +267,10 @@ export default function WorkspacesPage() {
         // Has workspaces but none match filter
         <Card className="p-12 text-center">
           <div className="mx-auto max-w-md">
-            <Search className="mx-auto h-12 w-12 text-muted-foreground" />
+            <Search
+              className="mx-auto h-12 w-12 text-muted-foreground"
+              aria-hidden="true"
+            />
             <h3 className="mt-4 text-lg font-semibold">Aucun résultat</h3>
             <p className="mt-2 text-muted-foreground">
               Aucun workspace ne correspond à vos critères de recherche.
@@ -276,7 +292,10 @@ export default function WorkspacesPage() {
         <Card className="p-12 text-center">
           <div className="mx-auto max-w-md">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <FolderKanban className="h-8 w-8 text-muted-foreground" />
+              <FolderKanban
+                className="h-8 w-8 text-muted-foreground"
+                aria-hidden="true"
+              />
             </div>
             <h3 className="text-xl font-semibold">
               Aucun workspace pour l'instant
@@ -287,12 +306,12 @@ export default function WorkspacesPage() {
             </p>
             <div className="mt-6 flex justify-center gap-4">
               <Button variant="outline" onClick={() => setJoinDialogOpen(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
+                <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
                 Rejoindre
               </Button>
               <Link href="/dashboard/workspaces/new">
                 <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                   Créer un workspace
                 </Button>
               </Link>
@@ -302,31 +321,39 @@ export default function WorkspacesPage() {
       )}
 
       {/* Pagination controls */}
-      {!isLoading && workspaces.length > 0 && pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t pt-4">
-          <p className="text-sm text-muted-foreground">
-            Page {pagination.page} sur {pagination.totalPages} ({pagination.total} workspace{pagination.total > 1 ? "s" : ""})
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePreviousPage}
-              disabled={!pagination.hasPreviousPage}
-            >
-              Précédent
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNextPage}
-              disabled={!pagination.hasNextPage}
-            >
-              Suivant
-            </Button>
+      {!isLoading &&
+        workspaces.length > 0 &&
+        pagination &&
+        pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t pt-4">
+            <p className="text-sm text-muted-foreground">
+              Page {pagination.page} sur {pagination.totalPages} (
+              {pagination.total} workspace{pagination.total > 1 ? "s" : ""})
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={!pagination.hasPreviousPage}
+                aria-label="Page précédente"
+                aria-disabled={!pagination.hasPreviousPage}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!pagination.hasNextPage}
+                aria-label="Page suivante"
+                aria-disabled={!pagination.hasNextPage}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
