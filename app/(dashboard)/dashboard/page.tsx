@@ -31,8 +31,8 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { data } = await axios.get("/api/workspaces");
-        const workspaces = data.data || [];
+        const { data } = await axios.get("/api/workspaces?limit=100");
+        const workspaces = data.data.data || [];
 
         const totalMembers = workspaces.reduce(
           (acc: number, w: any) => acc + (w._count?.members || 0),
@@ -44,7 +44,7 @@ export default function DashboardPage() {
         );
 
         setStats({
-          totalWorkspaces: workspaces.length,
+          totalWorkspaces: data.data.pagination?.total || workspaces.length,
           totalMembers,
           totalSessions,
           recentWorkspaces: workspaces.slice(0, 3),
