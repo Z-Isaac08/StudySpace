@@ -11,15 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User } from "@/generated/prisma/client";
-import { Bell, ChevronDown, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Settings, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 
 interface HeaderProps {
   user: User;
   onLogout: () => void;
+  onMenuClick?: () => void;
 }
 
-export function Header({ user, onLogout }: HeaderProps) {
+export function Header({ user, onLogout, onMenuClick }: HeaderProps) {
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
@@ -28,14 +29,24 @@ export function Header({ user, onLogout }: HeaderProps) {
     .slice(0, 2);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Left side - Page title will be injected via context/props */}
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 sm:px-6 backdrop-blur supports-backdrop-filter:bg-background/60">
+      {/* Left side - Hamburger menu (mobile) + page title */}
       <div className="flex items-center gap-4">
+        {/* Hamburger menu button (mobile only) */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={onMenuClick}
+          aria-label="Ouvrir le menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
         {/* Breadcrumb or page title will go here */}
       </div>
 
       {/* Right side - User menu & notifications */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -50,7 +61,7 @@ export function Header({ user, onLogout }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-3 px-2 hover:bg-accent"
+              className="flex items-center gap-2 sm:gap-3 px-2 hover:bg-accent"
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.avatar || undefined} alt={user.name} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { Header } from "@/components/layout/Header";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileSidebar, Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/lib/stores/auth-store";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, isLoading, isAuthenticated, checkAuth, logout } = useAuth();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const performAuthCheck = async () => {
@@ -60,16 +61,28 @@ export default function DashboardLayout({
       >
         Aller au contenu principal
       </a>
-      {/* Sidebar */}
+
+      {/* Desktop Sidebar - hidden on mobile */}
       <Sidebar onLogout={handleLogout} />
 
-      {/* Main content area */}
-      <div className="pl-64">
+      {/* Mobile Sidebar - drawer that opens from left */}
+      <MobileSidebar
+        open={mobileMenuOpen}
+        onOpenChange={setMobileMenuOpen}
+        onLogout={handleLogout}
+      />
+
+      {/* Main content area - responsive padding */}
+      <div className="lg:pl-64">
         {/* Header */}
-        <Header user={user} onLogout={handleLogout} />
+        <Header
+          user={user}
+          onLogout={handleLogout}
+          onMenuClick={() => setMobileMenuOpen(true)}
+        />
 
         {/* Page content */}
-        <main id="main-content" className="p-6">
+        <main id="main-content" className="p-4 sm:p-6">
           {children}
         </main>
       </div>
