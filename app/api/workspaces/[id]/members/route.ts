@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Check ownership
     const isOwner = await isWorkspaceOwner(user.id, workspaceId);
     if (!isOwner) {
-      return forbiddenResponse("Seul le propri�taire peut ajouter des membres");
+      return forbiddenResponse("Seul le propriétaire peut ajouter des membres");
     }
 
     const body = await request.json();
@@ -120,7 +120,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     // Check ownership
     const isOwner = await isWorkspaceOwner(user.id, workspaceId);
     if (!isOwner) {
-      return forbiddenResponse("Seul le propri�taire peut modifier les r�les");
+      return forbiddenResponse("Seul le propriétaire peut modifier les r�les");
     }
 
     const body = await request.json();

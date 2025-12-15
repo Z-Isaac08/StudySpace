@@ -36,7 +36,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       const isOwner = await isWorkspaceOwner(user.id, workspaceId);
       if (!isOwner) {
         return forbiddenResponse(
-          "Seul le propri�taire peut retirer des membres"
+          "Seul le propriétaire peut retirer des membres"
         );
       }
     }
@@ -66,7 +66,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
 
       if (ownerCount <= 1) {
         return errorResponse(
-          "Impossible de retirer le dernier propri�taire. Transf�rez la propri�t� ou supprimez le workspace.",
+          "Impossible de retirer le dernier propriétaire. Transf�rez la propri�t� ou supprimez le workspace.",
           400
         );
       }
