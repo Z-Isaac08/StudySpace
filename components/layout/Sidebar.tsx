@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -154,6 +155,9 @@ export function MobileSidebar({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-64 p-0 bg-sidebar">
         <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+        <SheetDescription className="sr-only">
+          Accédez au dashboard, aux workspaces et aux paramètres
+        </SheetDescription>
         <SidebarContent onLogout={onLogout} onLinkClick={() => onOpenChange(false)} />
       </SheetContent>
     </Sheet>
