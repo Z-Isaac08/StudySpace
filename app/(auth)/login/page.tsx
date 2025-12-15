@@ -40,7 +40,14 @@ function LoginForm() {
 
     try {
       await login(email, password);
-      router.push("/dashboard");
+
+      // Check if there's an invite code to redirect to
+      const inviteCode = searchParams.get("inviteCode");
+      if (inviteCode) {
+        router.push(`/invite/${inviteCode}`);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Erreur lors de la connexion");
     }

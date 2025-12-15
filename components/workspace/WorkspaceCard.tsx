@@ -95,7 +95,9 @@ export function WorkspaceCard({
   const [copied, setCopied] = useState(false);
 
   const handleCopyInviteCode = async () => {
-    await navigator.clipboard.writeText(inviteCode);
+    // Copy full invite link instead of just code
+    const inviteLink = `${window.location.origin}/invite/${inviteCode}`;
+    await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -202,7 +204,7 @@ export function WorkspaceCard({
             )}
             aria-hidden="true"
           />
-          {copied ? "Copié !" : inviteCode}
+          {copied ? "Lien copié !" : "Copier le lien"}
         </Button>
 
         <div className="flex items-center gap-2">

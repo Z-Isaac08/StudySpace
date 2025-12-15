@@ -16,12 +16,14 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useState, Suspense } from "react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register, isLoading } = useAuth();
+  const inviteCode = searchParams.get("inviteCode");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,13 +62,20 @@ export default function RegisterPage() {
       setSuccess(
         "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
       );
-      // Redirect to verify-email if email confirmation is enabled
-      // Otherwise go to dashboard (Supabase will auto-login if confirmation disabled)
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+
+      // Redirect to verify-email or invite page if there's a code
+      const redirectUrl = inviteCode
+        ? `/verify-email?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}`
+        : `/verify-email?email=${encodeURIComponent(email)}`;
+
+      router.push(redirectUrl);
     } catch (err: any) {
       // If error is "email_not_confirmed", redirect to verify-email
       if (err.message?.includes("confirm")) {
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        const redirectUrl = inviteCode
+          ? `/verify-email?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}`
+          : `/verify-email?email=${encodeURIComponent(email)}`;
+        router.push(redirectUrl);
       } else {
         setError(err.message || "Erreur lors de l'inscription");
       }
@@ -371,5 +380,13 @@ export default function RegisterPage() {
         </Link>
       </p>
     </MotionDiv>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
