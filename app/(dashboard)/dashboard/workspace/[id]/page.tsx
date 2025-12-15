@@ -5,13 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/lib/stores/auth-store";
+import { useWorkspaceDetail } from "@/lib/stores/workspace-store";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import {
@@ -19,52 +31,18 @@ import {
   Clock,
   Copy,
   FileText,
+  LogOut,
   MoreVertical,
-  Pencil,
   Play,
   Settings,
   Trash2,
+  UserMinus,
+  UserPlus,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-interface WorkspaceData {
-  id: string;
-  name: string;
-  description: string | null;
-  tag: string;
-  inviteCode: string;
-  createdAt: string;
-  userRole: "OWNER" | "MEMBER";
-  members: Array<{
-    id: string;
-    role: string;
-    joinedAt: string;
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      avatar: string | null;
-    };
-  }>;
-  sessions: Array<{
-    id: string;
-    title: string | null;
-    startedAt: string;
-    endedAt: string | null;
-    duration: number | null;
-    createdBy: {
-      name: string;
-    };
-  }>;
-  _count: {
-    members: number;
-    sessions: number;
-    files: number;
-  };
-}
 
 const tagLabels: Record<string, string> = {
   maths: "Maths",
@@ -93,33 +71,134 @@ const tagColors: Record<string, string> = {
 export default function WorkspaceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const workspaceId = params.id as string;
 
-  const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    workspace,
+    isLoading,
+    error,
+    fetchWorkspaceDetail,
+    addMember: addMemberToWorkspace,
+    removeMember: removeMemberFromWorkspace,
+    updateMemberRole: updateMemberRoleInWorkspace,
+    deleteWorkspace: deleteWorkspaceFromStore,
+    clearCurrentWorkspace,
+  } = useWorkspaceDetail();
+
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    async function fetchWorkspace() {
-      try {
-        const { data } = await axios.get(`/api/workspaces/${workspaceId}`);
-        setWorkspace(data.data);
-      } catch (err: any) {
-        setError(err.response?.data?.error || "Workspace introuvable");
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  // Add member dialog state
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
+  const [addMemberError, setAddMemberError] = useState("");
 
-    fetchWorkspace();
-  }, [workspaceId]);
+  useEffect(() => {
+    fetchWorkspaceDetail(workspaceId);
+
+    return () => {
+      clearCurrentWorkspace();
+    };
+  }, [workspaceId, fetchWorkspaceDetail, clearCurrentWorkspace]);
 
   const handleCopyInviteCode = async () => {
     if (!workspace) return;
-    await navigator.clipboard.writeText(workspace.inviteCode);
+    const inviteLink = `${window.location.origin}/invite/${workspace.inviteCode}`;
+    await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddMember = async () => {
+    if (!memberEmail.trim()) {
+      setAddMemberError("Veuillez entrer un email");
+      return;
+    }
+
+    setAddMemberLoading(true);
+    setAddMemberError("");
+
+    try {
+      await addMemberToWorkspace(workspaceId, memberEmail);
+
+      // Reset and close dialog
+      setMemberEmail("");
+      setAddMemberOpen(false);
+    } catch (err: any) {
+      setAddMemberError(
+        err.response?.data?.error || "Impossible d'ajouter le membre"
+      );
+    } finally {
+      setAddMemberLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, userName: string) => {
+    if (
+      !confirm(`Êtes-vous sûr de vouloir retirer ${userName} du workspace ?`)
+    ) {
+      return;
+    }
+
+    try {
+      await removeMemberFromWorkspace(workspaceId, userId);
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Impossible de retirer le membre");
+    }
+  };
+
+  const handleLeaveWorkspace = async () => {
+    if (!user) return;
+
+    if (
+      !confirm(
+        "Êtes-vous sûr de vouloir quitter ce workspace ? Vous devrez être réinvité pour le rejoindre à nouveau."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await removeMemberFromWorkspace(workspaceId, user.id);
+      router.push("/dashboard/workspaces");
+    } catch (err: any) {
+      alert(
+        err.response?.data?.error || "Impossible de quitter le workspace"
+      );
+    }
+  };
+
+  const handlePromoteToOwner = async (userId: string, userName: string) => {
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir promouvoir ${userName} au rang de propriétaire ?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await updateMemberRoleInWorkspace(workspaceId, userId, "OWNER");
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Impossible de modifier le rôle");
+    }
+  };
+
+  const handleDemoteToMember = async (userId: string, userName: string) => {
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir rétrograder ${userName} au rang de membre ?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await updateMemberRoleInWorkspace(workspaceId, userId, "MEMBER");
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Impossible de modifier le rôle");
+    }
   };
 
   const handleDelete = async () => {
@@ -128,7 +207,7 @@ export default function WorkspaceDetailPage() {
     }
 
     try {
-      await axios.delete(`/api/workspaces/${workspaceId}`);
+      await deleteWorkspaceFromStore(workspaceId);
       router.push("/dashboard/workspaces");
     } catch (err) {
       console.error("Failed to delete workspace:", err);
@@ -156,10 +235,12 @@ export default function WorkspaceDetailPage() {
     );
   }
 
-  if (error || !workspace) {
+  if (error || (!isLoading && !workspace)) {
     return (
       <div className="flex h-64 flex-col items-center justify-center">
-        <p className="text-error-500">{error}</p>
+        <p className="text-error-500">
+          {error || "Workspace introuvable"}
+        </p>
         <Link href="/dashboard/workspaces">
           <Button variant="outline" className="mt-4">
             Retour aux workspaces
@@ -215,7 +296,7 @@ export default function WorkspaceDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Invite code */}
+          {/* Invite link */}
           <Button
             variant="outline"
             size="sm"
@@ -223,7 +304,7 @@ export default function WorkspaceDetailPage() {
             onClick={handleCopyInviteCode}
           >
             <Copy className="h-4 w-4" />
-            {copied ? "Copié !" : workspace.inviteCode}
+            {copied ? "Lien copié !" : "Copier le lien"}
           </Button>
 
           {/* Start session */}
@@ -232,35 +313,46 @@ export default function WorkspaceDetailPage() {
             Commencer une session
           </Button>
 
-          {/* Actions (owner only) */}
-          {isOwner && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/dashboard/workspace/${workspaceId}/settings`}
-                    className="flex items-center gap-2"
+          {/* Actions */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isOwner && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={`/dashboard/workspace/${workspaceId}/settings`}
+                      className="flex items-center gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Paramètres
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleDelete}
+                    className="text-error-500 focus:bg-error-50 focus:text-error-600"
                   >
-                    <Settings className="h-4 w-4" />
-                    Paramètres
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </DropdownMenuItem>
+                </>
+              )}
+              {!isOwner && (
                 <DropdownMenuItem
-                  onClick={handleDelete}
+                  onClick={handleLeaveWorkspace}
                   className="text-error-500 focus:bg-error-50 focus:text-error-600"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Supprimer
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Quitter le workspace
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -284,47 +376,125 @@ export default function WorkspaceDetailPage() {
         {/* Members tab */}
         <TabsContent value="members" className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-lg">
                 Membres ({workspace._count.members})
               </CardTitle>
+              {isOwner && (
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setAddMemberOpen(true)}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Ajouter un membre
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {workspace.members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage
-                          src={member.user.avatar || undefined}
-                          alt={member.user.name}
-                        />
-                        <AvatarFallback>
-                          {member.user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{member.user.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {member.user.email}
-                        </p>
+                {workspace.members.map((member) => {
+                  const isSelf = user?.id === member.user.id;
+                  const canManage = isOwner && !isSelf;
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage
+                            src={member.user.avatar || undefined}
+                            alt={member.user.name}
+                          />
+                          <AvatarFallback>
+                            {member.user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {member.user.name}
+                            {isSelf && (
+                              <span className="ml-2 text-sm text-muted-foreground">
+                                (vous)
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {member.user.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            member.role === "OWNER" ? "default" : "secondary"
+                          }
+                        >
+                          {member.role === "OWNER" ? "Propriétaire" : "Membre"}
+                        </Badge>
+
+                        {canManage && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {member.role === "MEMBER" && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handlePromoteToOwner(
+                                      member.user.id,
+                                      member.user.name
+                                    )
+                                  }
+                                >
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  Promouvoir propriétaire
+                                </DropdownMenuItem>
+                              )}
+                              {member.role === "OWNER" && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDemoteToMember(
+                                      member.user.id,
+                                      member.user.name
+                                    )
+                                  }
+                                >
+                                  <UserMinus className="mr-2 h-4 w-4" />
+                                  Rétrograder en membre
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleRemoveMember(
+                                    member.user.id,
+                                    member.user.name
+                                  )
+                                }
+                                className="text-error-500 focus:bg-error-50 focus:text-error-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Retirer du workspace
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                     </div>
-                    <Badge
-                      variant={member.role === "OWNER" ? "default" : "secondary"}
-                    >
-                      {member.role === "OWNER" ? "Propriétaire" : "Membre"}
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -411,6 +581,64 @@ export default function WorkspaceDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Member Dialog */}
+      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter un membre</DialogTitle>
+            <DialogDescription>
+              Entrez l'email d'un utilisateur inscrit pour l'ajouter à ce
+              workspace.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="utilisateur@example.com"
+                value={memberEmail}
+                onChange={(e) => {
+                  setMemberEmail(e.target.value);
+                  setAddMemberError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !addMemberLoading) {
+                    handleAddMember();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+
+            {addMemberError && (
+              <p className="text-sm text-error-500" role="alert">
+                {addMemberError}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddMemberOpen(false);
+                setMemberEmail("");
+                setAddMemberError("");
+              }}
+              disabled={addMemberLoading}
+            >
+              Annuler
+            </Button>
+            <Button onClick={handleAddMember} disabled={addMemberLoading}>
+              {addMemberLoading ? "Ajout en cours..." : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
