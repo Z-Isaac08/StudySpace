@@ -36,14 +36,16 @@ export const WorkspaceTagSchema = z.enum([
   "info",
   "physique",
   "chimie",
-  "droit",
+  "svt",
   "langues",
+  "droit",
   "general",
+  "autre",
 ]);
 
 export const CreateWorkspaceSchema = z.object({
   name: z.string().min(3, "Le nom doit contenir au moins 3 caractères"),
-  tag: WorkspaceTagSchema.default("general"),
+  tag: WorkspaceTagSchema,
 });
 
 export const UpdateWorkspaceSchema = z.object({

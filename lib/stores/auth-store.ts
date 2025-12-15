@@ -90,11 +90,16 @@ export const useAuthStore = create<AuthStore>()(
           try {
             await axios.post("/api/auth/logout");
 
+            // Clear auth state
             set({
               user: null,
               isAuthenticated: false,
               isLoading: false,
             });
+
+            // Clear workspace store
+            const { useWorkspaceStore } = await import("./workspace-store");
+            useWorkspaceStore.getState().clearWorkspaces();
           } catch (error: any) {
             set({ isLoading: false });
             throw new Error(
@@ -125,8 +130,15 @@ export const useAuthStore = create<AuthStore>()(
       }),
       {
         name: "auth-storage",
+        // Only persist non-sensitive user info
         partialize: (state) => ({
-          user: state.user,
+          user: state.user
+            ? {
+                id: state.user.id,
+                email: state.user.email,
+                name: state.user.name,
+              }
+            : null,
           isAuthenticated: state.isAuthenticated,
         }),
       }

@@ -36,9 +36,18 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+const linkFocusClasses =
+  "rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 focus-visible:underline";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded"
+      >
+        Aller au contenu principal
+      </a>
       <main id="main-content">
         {/* Hero Section - AMÉLIORÉ */}
         <MotionSection
@@ -116,6 +125,7 @@ export default function Home() {
                   <Link
                     href="/register"
                     aria-label="Créer un compte gratuitement"
+                    className={linkFocusClasses}
                   >
                     Obtenir mon accès gratuit
                     <ArrowRight className="h-5 w-5" aria-hidden="true" />
@@ -127,7 +137,11 @@ export default function Home() {
                   className="h-14 px-10 text-lg border-2"
                   asChild
                 >
-                  <Link href="#demo" aria-label="Voir la démo">
+                  <Link
+                    href="#demo"
+                    aria-label="Voir la démo"
+                    className={linkFocusClasses}
+                  >
                     Voir comment ça marche
                   </Link>
                 </Button>
@@ -428,23 +442,63 @@ export default function Home() {
                       </td>
                       <td className="p-4 text-center">
                         {row.discord ? (
-                          <Check className="h-5 w-5 text-success-500 mx-auto" />
+                          <>
+                            <Check
+                              className="h-5 w-5 text-success-500 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">
+                              Discord + Docs : Oui
+                            </span>
+                          </>
                         ) : (
-                          <X className="h-5 w-5 text-error-500 mx-auto" />
+                          <>
+                            <X
+                              className="h-5 w-5 text-error-500 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">
+                              Discord + Docs : Non
+                            </span>
+                          </>
                         )}
                       </td>
                       <td className="p-4 text-center">
                         {row.zoom ? (
-                          <Check className="h-5 w-5 text-success-500 mx-auto" />
+                          <>
+                            <Check
+                              className="h-5 w-5 text-success-500 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">Zoom + Miro : Oui</span>
+                          </>
                         ) : (
-                          <X className="h-5 w-5 text-error-500 mx-auto" />
+                          <>
+                            <X
+                              className="h-5 w-5 text-error-500 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">Zoom + Miro : Non</span>
+                          </>
                         )}
                       </td>
                       <td className="p-4 text-center bg-primary-50/50 dark:bg-primary-900/10">
                         {row.studyspace ? (
-                          <Check className="h-5 w-5 text-primary-600 dark:text-primary-400 mx-auto" />
+                          <>
+                            <Check
+                              className="h-5 w-5 text-primary-600 dark:text-primary-400 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">StudySpace : Oui</span>
+                          </>
                         ) : (
-                          <X className="h-5 w-5 text-error-500 mx-auto" />
+                          <>
+                            <X
+                              className="h-5 w-5 text-error-500 mx-auto"
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">StudySpace : Non</span>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -586,13 +640,15 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>
-                  <Link href="/register">
+                  <Link href="/register" className={linkFocusClasses}>
                     Devenir early adopter
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
-                  <Link href="/login">J'ai déjà un compte</Link>
+                  <Link href="/login" className={linkFocusClasses}>
+                    J'ai déjà un compte
+                  </Link>
                 </Button>
               </div>
               <p className="mt-6 text-sm text-neutral-600 dark:text-neutral-400">
@@ -633,7 +689,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/features"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     Fonctionnalités
                   </Link>
@@ -641,7 +697,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/pricing"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     Tarifs
                   </Link>
@@ -649,7 +705,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/roadmap"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     Roadmap
                   </Link>
@@ -665,7 +721,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/privacy"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     Confidentialité
                   </Link>
@@ -673,7 +729,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/terms"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     CGU
                   </Link>
@@ -681,7 +737,7 @@ export default function Home() {
                 <li>
                   <Link
                     href="/contact"
-                    className="text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
                   >
                     Contact
                   </Link>

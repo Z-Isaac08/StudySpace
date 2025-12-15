@@ -10,6 +10,12 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded"
+      >
+        Aller au contenu principal
+      </a>
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 relative bg-white dark:bg-neutral-950">
         {/* Logo */}
@@ -24,7 +30,9 @@ export default function AuthLayout({
         </div>
 
         {/* Form Container */}
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">{children}</div>
+        <main id="main-content" className="sm:mx-auto sm:w-full sm:max-w-md">
+          {children}
+        </main>
 
         {/* Footer */}
         <div className="mt-10 text-center text-sm text-neutral-500 dark:text-neutral-400">

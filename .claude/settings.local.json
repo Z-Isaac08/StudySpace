@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(git -C \"C:\\Users\\DPcomputer\\Desktop\\P_DOC\\HTML_CSS_JS\\NEXT\\StudySpace\" log --oneline -20)",
+      "Bash(npx shadcn@latest add:*)"
+    ]
+  }
+}
