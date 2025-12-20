@@ -64,11 +64,15 @@ export const InviteToWorkspaceSchema = z.object({
 // ============================================
 
 export const CreateSessionSchema = z.object({
-  workspaceId: z.uuid("ID de workspace invalide"),
+  workspaceId: z.string().min(1, "ID de workspace requis"),
+});
+
+export const UpdateSessionSchema = z.object({
+  canvasState: z.any().optional(), // JSON
+  editorState: z.any().optional(), // JSON
 });
 
 export const EndSessionSchema = z.object({
-  sessionId: z.uuid("ID de session invalide"),
   canvasState: z.any().optional(), // JSON
   editorState: z.any().optional(), // JSON
 });
@@ -112,6 +116,7 @@ export type UpdateWorkspaceInput = z.infer<typeof UpdateWorkspaceSchema>;
 export type InviteToWorkspaceInput = z.infer<typeof InviteToWorkspaceSchema>;
 
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
+export type UpdateSessionInput = z.infer<typeof UpdateSessionSchema>;
 export type EndSessionInput = z.infer<typeof EndSessionSchema>;
 
 export type UploadFileInput = z.infer<typeof UploadFileSchema>;
