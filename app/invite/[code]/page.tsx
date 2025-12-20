@@ -28,7 +28,7 @@ const tagLabels: Record<string, string> = {
   svt: "SVT",
   langues: "Langues",
   droit: "Droit",
-  general: "Général",
+  general: "Gï¿½nï¿½ral",
   autre: "Autre",
 };
 
@@ -74,7 +74,7 @@ export default function InvitePage() {
         const errorMsg = error.response?.data?.error || "Erreur inconnue";
 
         // Check if already member
-        if (errorMsg.includes("déjà membre")) {
+        if (errorMsg.includes("dï¿½jï¿½ membre")) {
           setStatus("already_member");
           // Try to extract workspace info from error or fetch it
           // For now, redirect to workspaces list
@@ -100,7 +100,9 @@ export default function InvitePage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <h1 className="text-2xl font-bold">Traitement de l'invitation...</h1>
+            <h1 className="text-2xl font-bold">
+              Traitement de l'invitation...
+            </h1>
             <p className="text-muted-foreground">
               Veuillez patienter un instant
             </p>
@@ -117,22 +119,29 @@ export default function InvitePage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
-              <CheckCircle className="h-8 w-8 text-success" aria-hidden="true" />
+              <CheckCircle
+                className="h-8 w-8 text-success"
+                aria-hidden="true"
+              />
             </div>
             <h1 className="text-2xl font-bold">Bienvenue !</h1>
             <p className="text-muted-foreground">
-              Vous avez rejoint le workspace avec succès
+              Vous avez rejoint le workspace avec succï¿½s
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg border p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <FolderKanban className="h-5 w-5 text-primary" aria-hidden="true" />
+                <FolderKanban
+                  className="h-5 w-5 text-primary"
+                  aria-hidden="true"
+                />
                 <h2 className="text-lg font-semibold">{workspace.name}</h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                {tagLabels[workspace.tag] || workspace.tag} · {workspace._count.members}{" "}
-                membre{workspace._count.members > 1 ? "s" : ""}
+                {tagLabels[workspace.tag] || workspace.tag} ï¿½{" "}
+                {workspace._count.members} membre
+                {workspace._count.members > 1 ? "s" : ""}
               </p>
             </div>
             <p className="text-center text-sm text-muted-foreground">
@@ -153,9 +162,9 @@ export default function InvitePage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-info/10">
               <CheckCircle className="h-8 w-8 text-info" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold">Déjà membre</h1>
+            <h1 className="text-2xl font-bold">Dï¿½jï¿½ membre</h1>
             <p className="text-muted-foreground">
-              Vous êtes déjà membre de ce workspace
+              Vous ï¿½tes dï¿½jï¿½ membre de ce workspace
             </p>
           </CardHeader>
           <CardContent>

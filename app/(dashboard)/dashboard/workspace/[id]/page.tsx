@@ -24,13 +24,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/stores/auth-store";
 import { useWorkspaceDetail } from "@/lib/stores/workspace-store";
+import { useSession } from "@/lib/stores/session-store";
 import { cn } from "@/lib/utils";
-import axios from "axios";
 import {
   ArrowLeft,
   Clock,
   Copy,
+  Eye,
   FileText,
+  Loader2,
   LogOut,
   MoreVertical,
   Play,
@@ -86,6 +88,13 @@ export default function WorkspaceDetailPage() {
     clearCurrentWorkspace,
   } = useWorkspaceDetail();
 
+  const {
+    sessions,
+    isCreating: isCreatingSession,
+    fetchSessions,
+    createSession,
+  } = useSession();
+
   const [copied, setCopied] = useState(false);
 
   // Add member dialog state
@@ -96,11 +105,12 @@ export default function WorkspaceDetailPage() {
 
   useEffect(() => {
     fetchWorkspaceDetail(workspaceId);
+    fetchSessions(workspaceId);
 
     return () => {
       clearCurrentWorkspace();
     };
-  }, [workspaceId, fetchWorkspaceDetail, clearCurrentWorkspace]);
+  }, [workspaceId, fetchWorkspaceDetail, fetchSessions, clearCurrentWorkspace]);
 
   const handleCopyInviteCode = async () => {
     if (!workspace) return;
@@ -216,11 +226,12 @@ export default function WorkspaceDetailPage() {
 
   const handleStartSession = async () => {
     try {
-      const { data } = await axios.post("/api/sessions", { workspaceId });
-      // For now, just refresh - later this will open the collaborative canvas
-      router.refresh();
+      const session = await createSession(workspaceId);
+      // Redirect to session page
+      router.push(`/dashboard/session/${session.id}`);
     } catch (err) {
       console.error("Failed to start session:", err);
+      alert("Impossible de démarrer la session");
     }
   };
 
@@ -269,7 +280,7 @@ export default function WorkspaceDetailPage() {
           <div
             className={cn(
               "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-2xl",
-              tagColors[workspace.tag]?.split(" ")[0] || "bg-neutral-100"
+              tagColors[workspace!.tag]?.split(" ")[0] || "bg-neutral-100"
             )}
           >
             📚
@@ -308,9 +319,16 @@ export default function WorkspaceDetailPage() {
           </Button>
 
           {/* Start session */}
-          <Button className="gap-2" onClick={handleStartSession}>
-            <Play className="h-4 w-4" />
-            Commencer une session
+          <Button
+            className="gap-2"
+            onClick={handleStartSession}
+            disabled={isCreatingSession}
+          >
+            {isCreatingSession ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />Création...</>
+            ) : (
+              <><Play className="h-4 w-4" />Commencer une session</>
+            )}
           </Button>
 
           {/* Actions */}

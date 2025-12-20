@@ -54,16 +54,22 @@ interface SessionActions {
   fetchSession: (sessionId: string) => Promise<void>;
 
   // Update session state (auto-save)
-  updateSession: (sessionId: string, data: {
-    canvasState?: any;
-    editorState?: any;
-  }) => Promise<void>;
+  updateSession: (
+    sessionId: string,
+    data: {
+      canvasState?: any;
+      editorState?: any;
+    }
+  ) => Promise<void>;
 
   // End a session
-  endSession: (sessionId: string, data?: {
-    canvasState?: any;
-    editorState?: any;
-  }) => Promise<void>;
+  endSession: (
+    sessionId: string,
+    data?: {
+      canvasState?: any;
+      editorState?: any;
+    }
+  ) => Promise<void>;
 
   // Delete a session
   deleteSession: (sessionId: string) => Promise<void>;
@@ -91,11 +97,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   fetchSessions: async (workspaceId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const { data } = await axios.get(`/api/sessions?workspaceId=${workspaceId}`);
+      const { data } = await axios.get(
+        `/api/sessions?workspaceId=${workspaceId}`
+      );
       set({ sessions: data.data, isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || "Erreur lors du chargement des sessions",
+        error:
+          error.response?.data?.error ||
+          "Erreur lors du chargement des sessions",
         isLoading: false,
       });
       throw error;
@@ -118,7 +128,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       return session;
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || "Erreur lors de la création de la session",
+        error:
+          error.response?.data?.error ||
+          "Erreur lors de la création de la session",
         isCreating: false,
       });
       throw error;
@@ -133,7 +145,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ currentSession: data.data, isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || "Erreur lors du chargement de la session",
+        error:
+          error.response?.data?.error ||
+          "Erreur lors du chargement de la session",
         isLoading: false,
       });
       throw error;
@@ -141,13 +155,19 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   // Update session (auto-save)
-  updateSession: async (sessionId: string, updateData: {
-    canvasState?: any;
-    editorState?: any;
-  }) => {
+  updateSession: async (
+    sessionId: string,
+    updateData: {
+      canvasState?: any;
+      editorState?: any;
+    }
+  ) => {
     set({ isSaving: true, error: null });
     try {
-      const { data } = await axios.put(`/api/sessions/${sessionId}`, updateData);
+      const { data } = await axios.put(
+        `/api/sessions/${sessionId}`,
+        updateData
+      );
       const updatedSession = data.data;
 
       set({
@@ -168,13 +188,19 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   // End a session
-  endSession: async (sessionId: string, finalData?: {
-    canvasState?: any;
-    editorState?: any;
-  }) => {
+  endSession: async (
+    sessionId: string,
+    finalData?: {
+      canvasState?: any;
+      editorState?: any;
+    }
+  ) => {
     set({ isEnding: true, error: null });
     try {
-      const { data } = await axios.put(`/api/sessions/${sessionId}/end`, finalData || {});
+      const { data } = await axios.put(
+        `/api/sessions/${sessionId}/end`,
+        finalData || {}
+      );
       const endedSession = data.data;
 
       set({
@@ -186,7 +212,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       });
     } catch (error: any) {
       set({
-        error: error.response?.data?.error || "Erreur lors de la fin de la session",
+        error:
+          error.response?.data?.error || "Erreur lors de la fin de la session",
         isEnding: false,
       });
       throw error;
@@ -200,7 +227,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
       set({
         sessions: get().sessions.filter((s) => s.id !== sessionId),
-        currentSession: get().currentSession?.id === sessionId ? null : get().currentSession,
+        currentSession:
+          get().currentSession?.id === sessionId ? null : get().currentSession,
       });
     } catch (error: any) {
       set({
