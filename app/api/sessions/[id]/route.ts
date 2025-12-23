@@ -11,21 +11,24 @@ import { prisma } from "@/lib/prisma";
 import { UpdateSessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
+type Params = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
 /**
  * GET /api/sessions/[id]
  * Get session details
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return unauthorizedResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -69,17 +72,14 @@ export async function GET(
  * PUT /api/sessions/[id]
  * Update session (auto-save canvas/editor state)
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: Params) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return unauthorizedResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Validate input
@@ -98,7 +98,10 @@ export async function PUT(
     }
 
     // Check if user is workspace member
-    const isMember = await isWorkspaceMember(user.id, existingSession.workspaceId);
+    const isMember = await isWorkspaceMember(
+      user.id,
+      existingSession.workspaceId
+    );
     if (!isMember) {
       return forbiddenResponse("Vous n'êtes pas membre de ce workspace");
     }
@@ -137,17 +140,14 @@ export async function PUT(
  * DELETE /api/sessions/[id]
  * Delete a session
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return unauthorizedResponse();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -172,8 +172,7 @@ export async function DELETE(
     });
 
     const canDelete =
-      session.createdById === user.id ||
-      membership?.role === "OWNER";
+      session.createdById === user.id || membership?.role === "OWNER";
 
     if (!canDelete) {
       return forbiddenResponse(

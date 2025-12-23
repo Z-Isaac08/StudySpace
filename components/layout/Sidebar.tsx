@@ -1,5 +1,12 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -11,14 +18,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 
 interface NavItem {
   label: string;
@@ -50,7 +49,7 @@ function SidebarContent({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
         <BookOpen className="h-7 w-7 text-primary" />
@@ -86,7 +85,7 @@ function SidebarContent({
         {/* Create Workspace Button */}
         <div className="pt-4">
           <Link href="/dashboard/workspaces/new" onClick={onLinkClick}>
-            <Button className="w-full gap-2 group/create" size="sm">
+            <Button className="w-full gap-2 group/create" size="lg">
               <Plus className="h-4 w-4 transition-transform duration-200 group-hover/create:rotate-90" />
               Nouveau workspace
             </Button>
@@ -158,7 +157,10 @@ export function MobileSidebar({
         <SheetDescription className="sr-only">
           Accédez au dashboard, aux workspaces et aux paramètres
         </SheetDescription>
-        <SidebarContent onLogout={onLogout} onLinkClick={() => onOpenChange(false)} />
+        <SidebarContent
+          onLogout={onLogout}
+          onLinkClick={() => onOpenChange(false)}
+        />
       </SheetContent>
     </Sheet>
   );

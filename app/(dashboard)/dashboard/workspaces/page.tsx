@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -112,6 +114,7 @@ export default function WorkspacesPage() {
 
     try {
       await deleteWorkspace(id);
+      toast.success("Workspace supprimé avec succès");
     } catch (error) {
       console.error("Failed to delete workspace:", error);
     }

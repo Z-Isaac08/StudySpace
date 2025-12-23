@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,6 +95,7 @@ export default function WorkspaceDetailPage() {
     isCreating: isCreatingSession,
     fetchSessions,
     createSession,
+    deleteSession,
   } = useSession();
 
   const [copied, setCopied] = useState(false);
@@ -154,7 +157,7 @@ export default function WorkspaceDetailPage() {
     try {
       await removeMemberFromWorkspace(workspaceId, userId);
     } catch (err: any) {
-      alert(err.response?.data?.error || "Impossible de retirer le membre");
+      toast.error(err.response?.data?.error || "Impossible de retirer le membre");
     }
   };
 
@@ -191,7 +194,7 @@ export default function WorkspaceDetailPage() {
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "OWNER");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Impossible de modifier le rôle");
+      toast.error(err.response?.data?.error || "Impossible de modifier le rôle");
     }
   };
 
@@ -207,7 +210,7 @@ export default function WorkspaceDetailPage() {
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "MEMBER");
     } catch (err: any) {
-      alert(err.response?.data?.error || "Impossible de modifier le rôle");
+      toast.error(err.response?.data?.error || "Impossible de modifier le rôle");
     }
   };
 
@@ -231,7 +234,7 @@ export default function WorkspaceDetailPage() {
       router.push(`/dashboard/session/${session.id}`);
     } catch (err) {
       console.error("Failed to start session:", err);
-      alert("Impossible de démarrer la session");
+      toast.error("Impossible de démarrer la session");
     }
   };
 
@@ -531,36 +534,78 @@ export default function WorkspaceDetailPage() {
                 <div className="space-y-3">
                   {workspace.sessions.map((session) => {
                     const startDate = new Date(session.startedAt);
+                    const endDate = session.endedAt ? new Date(session.endedAt) : null;
                     const durationMinutes = session.duration
                       ? Math.round(session.duration / 60)
                       : null;
+                    const isActive = !session.endedAt;
+                    const canDelete = session.createdById === user?.id || workspace.userRole === "OWNER";
 
                     return (
-                      <div
+                      <Link
                         key={session.id}
-                        className="flex items-center justify-between rounded-lg border p-3"
+                        href={`/dashboard/session/${session.id}`}
+                        className="block rounded-lg border p-3 transition-colors hover:bg-accent"
                       >
-                        <div>
-                          <p className="font-medium">
-                            {session.title ||
-                              `Session du ${startDate.toLocaleDateString("fr-FR")}`}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Par {session.createdBy.name} ·{" "}
-                            {startDate.toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium truncate">
+                                {session.title ||
+                                  `Session du ${startDate.toLocaleDateString("fr-FR")}`}
+                              </p>
+                              {isActive && (
+                                <Badge variant="default" className="shrink-0">
+                                  En cours
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Par {session.createdBy.name} ·{" "}
+                              {startDate.toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {endDate && (
+                                <>
+                                  {" - "}
+                                  {endDate.toLocaleTimeString("fr-FR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {durationMinutes !== null && (
+                              <Badge variant="secondary">
+                                {durationMinutes < 60
+                                  ? `${durationMinutes} min`
+                                  : `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}min` : ""}`}
+                              </Badge>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (confirm("Voulez-vous vraiment supprimer cette session ?")) {
+                                    await deleteSession(session.id);
+                                    toast.success("Session supprimée avec succès");
+                                    fetchWorkspaceDetail(workspaceId);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        {durationMinutes !== null && (
-                          <Badge variant="secondary">
-                            {durationMinutes < 60
-                              ? `${durationMinutes} min`
-                              : `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}min` : ""}`}
-                          </Badge>
-                        )}
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

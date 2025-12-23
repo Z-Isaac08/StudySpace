@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,7 +78,7 @@ export default function SessionPage() {
     }
 
     // Setup canvas drawing
-    if (canvasRef.current) {
+    if (canvasRef.current && !currentSession.endedAt) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -135,7 +137,7 @@ export default function SessionPage() {
     }
   }, [currentSession]);
 
-  // Auto-save every 30 seconds
+  // Auto-save every 60 seconds
   useEffect(() => {
     if (!currentSession || currentSession.endedAt) return;
 
@@ -151,10 +153,10 @@ export default function SessionPage() {
     };
 
     // Initial save after 5 seconds
-    const initialTimeout = setTimeout(saveSession, 5000);
+    const initialTimeout = setTimeout(saveSession, 10000);
 
-    // Then auto-save every 30 seconds
-    autoSaveIntervalRef.current = setInterval(saveSession, 30000);
+    // Then auto-save every 60 seconds
+    autoSaveIntervalRef.current = setInterval(saveSession, 60000);
 
     return () => {
       clearTimeout(initialTimeout);
@@ -196,6 +198,8 @@ export default function SessionPage() {
       canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
       editorState: { content: editorContent },
     });
+
+    toast.success("Session terminée avec succès");
 
     router.push(`/dashboard/workspace/${currentSession.workspaceId}`);
   };
@@ -329,7 +333,7 @@ export default function SessionPage() {
               <CardContent className="relative h-full p-0">
                 <canvas
                   ref={canvasRef}
-                  className="h-full w-full cursor-crosshair rounded-lg border"
+                  className="h-full w-full cursor-default rounded-lg border"
                   style={{ touchAction: "none" }}
                 />
                 {!isEnded && (
