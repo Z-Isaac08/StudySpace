@@ -1,10 +1,11 @@
 "use client";
 
 import { MotionDiv } from "@/components/motion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import axios from "axios";
-import { CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -78,31 +79,18 @@ function VerifyEmailContent() {
 
           {/* Resend Success */}
           {resendSuccess && (
-            <MotionDiv
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-4 rounded-lg bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800 mb-4"
-            >
-              <div className="flex items-center gap-2 text-success-700 dark:text-success-300">
-                <CheckCircle2 className="h-5 w-5" />
-                <p className="text-sm font-medium">
-                  Email renvoyé avec succès !
-                </p>
-              </div>
-            </MotionDiv>
+            <Alert className="bg-success-50 border-success-200 text-success-700 dark:bg-success-900/20 dark:border-success-800 dark:text-success-300 mb-4">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>Email renvoyé avec succès !</AlertDescription>
+            </Alert>
           )}
 
           {/* Resend Error */}
           {resendError && (
-            <MotionDiv
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-4 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 mb-4"
-            >
-              <p className="text-sm text-error-700 dark:text-error-300 font-medium">
-                {resendError}
-              </p>
-            </MotionDiv>
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{resendError}</AlertDescription>
+            </Alert>
           )}
 
           {/* Resend Button */}

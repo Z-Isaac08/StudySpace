@@ -1,12 +1,13 @@
 "use client";
 
 import { MotionDiv } from "@/components/motion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import { ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
@@ -105,15 +106,10 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Alert */}
             {error && (
-              <MotionDiv
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-4 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800"
-              >
-                <p className="text-sm text-error-700 dark:text-error-300 font-medium">
-                  {error}
-                </p>
-              </MotionDiv>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {/* Email Field */}

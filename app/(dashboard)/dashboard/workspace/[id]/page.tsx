@@ -25,14 +25,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/stores/auth-store";
-import { useWorkspaceDetail } from "@/lib/stores/workspace-store";
 import { useSession } from "@/lib/stores/session-store";
+import { useWorkspaceDetail } from "@/lib/stores/workspace-store";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   Clock,
   Copy,
-  Eye,
   FileText,
   Loader2,
   LogOut,
@@ -134,6 +133,7 @@ export default function WorkspaceDetailPage() {
 
     try {
       await addMemberToWorkspace(workspaceId, memberEmail);
+      toast.success("Membre ajouté avec succès");
 
       // Reset and close dialog
       setMemberEmail("");
@@ -156,8 +156,11 @@ export default function WorkspaceDetailPage() {
 
     try {
       await removeMemberFromWorkspace(workspaceId, userId);
+      toast.success("Membre retiré du workspace");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Impossible de retirer le membre");
+      toast.error(
+        err.response?.data?.error || "Impossible de retirer le membre"
+      );
     }
   };
 
@@ -174,11 +177,10 @@ export default function WorkspaceDetailPage() {
 
     try {
       await removeMemberFromWorkspace(workspaceId, user.id);
+      toast.success("Vous avez quitté le workspace");
       router.push("/dashboard/workspaces");
     } catch (err: any) {
-      alert(
-        err.response?.data?.error || "Impossible de quitter le workspace"
-      );
+      toast.error(err.response?.data?.error || "Impossible de quitter le workspace");
     }
   };
 
@@ -193,8 +195,11 @@ export default function WorkspaceDetailPage() {
 
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "OWNER");
+      toast.success("Membre promu propriétaire");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Impossible de modifier le rôle");
+      toast.error(
+        err.response?.data?.error || "Impossible de modifier le rôle"
+      );
     }
   };
 
@@ -209,8 +214,11 @@ export default function WorkspaceDetailPage() {
 
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "MEMBER");
+      toast.success("Rôle modifié en membre");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Impossible de modifier le rôle");
+      toast.error(
+        err.response?.data?.error || "Impossible de modifier le rôle"
+      );
     }
   };
 
@@ -252,9 +260,7 @@ export default function WorkspaceDetailPage() {
   if (error || (!isLoading && !workspace)) {
     return (
       <div className="flex h-64 flex-col items-center justify-center">
-        <p className="text-error-500">
-          {error || "Workspace introuvable"}
-        </p>
+        <p className="text-error-500">{error || "Workspace introuvable"}</p>
         <Link href="/dashboard/workspaces">
           <Button variant="outline" className="mt-4">
             Retour aux workspaces
@@ -264,7 +270,7 @@ export default function WorkspaceDetailPage() {
     );
   }
 
-  const isOwner = workspace.userRole === "OWNER";
+  const isOwner = workspace!.userRole === "OWNER";
 
   return (
     <div className="space-y-6">
@@ -290,21 +296,22 @@ export default function WorkspaceDetailPage() {
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{workspace.name}</h1>
+              <h1 className="text-2xl font-bold">{workspace!.name}</h1>
               <Badge
                 variant="outline"
                 className={cn(
                   "text-xs",
-                  tagColors[workspace.tag] || tagColors.autre
+                  tagColors[workspace!.tag] || tagColors.autre
                 )}
               >
-                {tagLabels[workspace.tag] || workspace.tag}
+                {tagLabels[workspace!.tag] || workspace!.tag}
               </Badge>
             </div>
             <p className="mt-1 text-muted-foreground">
-              {workspace._count.members} membre
-              {workspace._count.members > 1 ? "s" : ""} · {workspace._count.sessions}{" "}
-              session{workspace._count.sessions > 1 ? "s" : ""}
+              {workspace!._count.members} membre
+              {workspace!._count.members > 1 ? "s" : ""} ·{" "}
+              {workspace!._count.sessions} session
+              {workspace!._count.sessions > 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -328,9 +335,15 @@ export default function WorkspaceDetailPage() {
             disabled={isCreatingSession}
           >
             {isCreatingSession ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Création...</>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Création...
+              </>
             ) : (
-              <><Play className="h-4 w-4" />Commencer une session</>
+              <>
+                <Play className="h-4 w-4" />
+                Commencer une session
+              </>
             )}
           </Button>
 
@@ -399,7 +412,7 @@ export default function WorkspaceDetailPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-lg">
-                Membres ({workspace._count.members})
+                Membres ({workspace!._count.members})
               </CardTitle>
               {isOwner && (
                 <Button
@@ -414,7 +427,7 @@ export default function WorkspaceDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {workspace.members.map((member) => {
+                {workspace!.members.map((member) => {
                   const isSelf = user?.id === member.user.id;
                   const canManage = isOwner && !isSelf;
 
@@ -526,20 +539,24 @@ export default function WorkspaceDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Historique des sessions ({workspace._count.sessions})
+                Historique des sessions ({workspace!._count.sessions})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {workspace.sessions.length > 0 ? (
+              {workspace!.sessions.length > 0 ? (
                 <div className="space-y-3">
-                  {workspace.sessions.map((session) => {
+                  {workspace!.sessions.map((session) => {
                     const startDate = new Date(session.startedAt);
-                    const endDate = session.endedAt ? new Date(session.endedAt) : null;
+                    const endDate = session.endedAt
+                      ? new Date(session.endedAt)
+                      : null;
                     const durationMinutes = session.duration
                       ? Math.round(session.duration / 60)
                       : null;
                     const isActive = !session.endedAt;
-                    const canDelete = session.createdById === user?.id || workspace.userRole === "OWNER";
+                    const canDelete =
+                      session.createdById === user?.id ||
+                      workspace!.userRole === "OWNER";
 
                     return (
                       <Link
@@ -552,7 +569,9 @@ export default function WorkspaceDetailPage() {
                             <div className="flex items-center gap-2">
                               <p className="font-medium truncate">
                                 {session.title ||
-                                  `Session du ${startDate.toLocaleDateString("fr-FR")}`}
+                                  `Session du ${startDate.toLocaleDateString(
+                                    "fr-FR"
+                                  )}`}
                               </p>
                               {isActive && (
                                 <Badge variant="default" className="shrink-0">
@@ -582,7 +601,11 @@ export default function WorkspaceDetailPage() {
                               <Badge variant="secondary">
                                 {durationMinutes < 60
                                   ? `${durationMinutes} min`
-                                  : `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}min` : ""}`}
+                                  : `${Math.floor(durationMinutes / 60)}h${
+                                      durationMinutes % 60 > 0
+                                        ? ` ${durationMinutes % 60}min`
+                                        : ""
+                                    }`}
                               </Badge>
                             )}
                             {canDelete && (
@@ -593,9 +616,15 @@ export default function WorkspaceDetailPage() {
                                 onClick={async (e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (confirm("Voulez-vous vraiment supprimer cette session ?")) {
+                                  if (
+                                    confirm(
+                                      "Voulez-vous vraiment supprimer cette session ?"
+                                    )
+                                  ) {
                                     await deleteSession(session.id);
-                                    toast.success("Session supprimée avec succès");
+                                    toast.success(
+                                      "Session supprimée avec succès"
+                                    );
                                     fetchWorkspaceDetail(workspaceId);
                                   }
                                 }}
@@ -630,7 +659,7 @@ export default function WorkspaceDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Fichiers ({workspace._count.files})
+                Fichiers ({workspace!._count.files})
               </CardTitle>
             </CardHeader>
             <CardContent>

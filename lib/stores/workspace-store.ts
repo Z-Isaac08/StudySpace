@@ -36,6 +36,7 @@ export interface WorkspaceDetail extends Workspace {
     startedAt: string;
     endedAt: string | null;
     duration: number | null;
+    createdById: string;
     createdBy: {
       name: string;
     };

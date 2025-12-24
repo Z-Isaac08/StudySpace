@@ -1,12 +1,14 @@
 "use client";
 
 import { MotionDiv } from "@/components/motion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/stores/auth-store";
 import {
+  AlertCircle,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -18,6 +20,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState, Suspense } from "react";
+import { toast } from "sonner";
 
 function RegisterForm() {
   const router = useRouter();
@@ -59,9 +62,7 @@ function RegisterForm() {
 
     try {
       await register(name, email, password);
-      setSuccess(
-        "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
-      );
+      toast.success("Compte créé ! Vérifiez votre boîte mail 📧");
 
       // Redirect to verify-email or invite page if there's a code
       const redirectUrl = inviteCode
@@ -72,6 +73,7 @@ function RegisterForm() {
     } catch (err: any) {
       // If error is "email_not_confirmed", redirect to verify-email
       if (err.message?.includes("confirm")) {
+        toast.success("Compte créé ! Vérifiez votre boîte mail 📧");
         const redirectUrl = inviteCode
           ? `/verify-email?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}`
           : `/verify-email?email=${encodeURIComponent(email)}`;
@@ -103,32 +105,18 @@ function RegisterForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Success Alert */}
           {success && (
-            <MotionDiv
-              role="status"
-              aria-live="polite"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-4 rounded-lg bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800"
-            >
-              <p className="text-sm text-success-700 dark:text-success-300 font-medium">
-                {success}
-              </p>
-            </MotionDiv>
+            <Alert className="bg-success-50 border-success-200 text-success-700 dark:bg-success-900/20 dark:border-success-800 dark:text-success-300">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
           )}
 
           {/* Error Alert */}
           {error && (
-            <MotionDiv
-              role="alert"
-              aria-live="assertive"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-4 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800"
-            >
-              <p className="text-sm text-error-700 dark:text-error-300 font-medium">
-                {error}
-              </p>
-            </MotionDiv>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {/* Name Field */}
@@ -307,7 +295,7 @@ function RegisterForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                className={`pl-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500 ${
+                className={`pl-10 pr-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500 ${
                   confirmPassword && password !== confirmPassword
                     ? "border-error-500 focus:ring-error-500"
                     : confirmPassword && password === confirmPassword
@@ -315,6 +303,23 @@ function RegisterForm() {
                     : ""
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                aria-label={
+                  showConfirmPassword
+                    ? "Masquer le mot de passe"
+                    : "Afficher le mot de passe"
+                }
+                aria-pressed={showConfirmPassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-5 w-5" aria-hidden="true" />
+                )}
+              </button>
             </div>
           </div>
 
