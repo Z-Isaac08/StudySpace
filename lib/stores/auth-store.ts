@@ -1,6 +1,6 @@
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import type { Session, User } from "@/lib/auth/client";
 import { authClient } from "@/lib/auth/client";
-import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { CreateUserSchema, LoginSchema } from "@/lib/validations";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
@@ -26,6 +26,9 @@ interface AuthState {
   verifyEmail: (token: string) => Promise<void>;
   sendVerificationEmail: (email: string, callbackURL?: string) => Promise<void>;
 
+  updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
+  deleteAccount: (password?: string) => Promise<void>;
+
   refreshSession: () => Promise<void>;
   clearSession: () => void;
 
@@ -49,19 +52,16 @@ export const useAuthStore = create<AuthState>()(
           try {
             const validated = LoginSchema.parse({ email, password });
 
-            const result = await authClient.signIn.email(
-              validated,
-              {
-                onError: (ctx) => {
-                  if (ctx.error.status === 403) {
-                    throw new Error(
-                      "Veuillez vérifier votre adresse email avant de vous connecter."
-                    );
-                  }
-                  throw new Error(getAuthErrorMessage(ctx.error));
-                },
-              }
-            );
+            const result = await authClient.signIn.email(validated, {
+              onError: (ctx) => {
+                if (ctx.error.status === 403) {
+                  throw new Error(
+                    "Veuillez vérifier votre adresse email avant de vous connecter."
+                  );
+                }
+                throw new Error(getAuthErrorMessage(ctx.error));
+              },
+            });
 
             if (result.error) {
               throw new Error(getAuthErrorMessage(result.error));
@@ -236,6 +236,64 @@ export const useAuthStore = create<AuthState>()(
                   "Erreur d'envoi de l'email de vérification"
               );
             }
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // UPDATE PROFILE
+        // ========================================
+        updateProfile: async (data: { name?: string; email?: string }) => {
+          set({ isLoading: true });
+          try {
+            // Update name if provided
+            if (data.name) {
+              const result = await authClient.updateUser({
+                name: data.name,
+              });
+              if (result.error) {
+                throw new Error(
+                  result.error.message || "Erreur de mise à jour du nom"
+                );
+              }
+            }
+
+            // Change email if provided (requires separate method)
+            if (data.email) {
+              const result = await authClient.changeEmail({
+                newEmail: data.email,
+              });
+              if (result.error) {
+                throw new Error(
+                  result.error.message || "Erreur de mise à jour de l'email"
+                );
+              }
+            }
+
+            // Refresh session to get updated user data
+            await get().refreshSession();
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // DELETE ACCOUNT
+        // ========================================
+        deleteAccount: async (password?: string) => {
+          set({ isLoading: true });
+          try {
+            const result = await authClient.deleteUser({
+              password,
+            });
+            if (result.error) {
+              throw new Error(
+                result.error.message || "Erreur lors de la suppression du compte"
+              );
+            }
+            // Clear session after successful deletion
+            get().clearSession();
           } finally {
             set({ isLoading: false });
           }

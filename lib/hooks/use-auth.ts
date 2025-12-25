@@ -18,6 +18,8 @@ export function useAuth() {
   const changePassword = useAuthStore((state) => state.changePassword);
   const verifyEmail = useAuthStore((state) => state.verifyEmail);
   const sendVerificationEmail = useAuthStore((state) => state.sendVerificationEmail);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const deleteAccount = useAuthStore((state) => state.deleteAccount);
   const refreshSession = useAuthStore((state) => state.refreshSession);
 
   return {
@@ -41,6 +43,10 @@ export function useAuth() {
     // Email verification
     verifyEmail,
     sendVerificationEmail,
+
+    // Profile management
+    updateProfile,
+    deleteAccount,
 
     // Session
     refreshSession,

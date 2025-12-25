@@ -1,4 +1,5 @@
 import { EMAIL_CONFIG, resend } from "@/lib/email/resend";
+import ChangeEmailTemplate from "@/lib/email/templates/change-email";
 import ResetPasswordEmail from "@/lib/email/templates/reset-password-email";
 import VerificationEmail from "@/lib/email/templates/verification-email";
 import prisma from "@/lib/prisma";
@@ -57,6 +58,51 @@ export const auth = betterAuth({
 
     onPasswordReset: async ({ user }, request) => {
       console.log(`✅ Mot de passe réinitialisé pour: ${user.email}`);
+    },
+  },
+
+  user: {
+    deleteUser: {
+      enabled: true,
+    },
+    changeEmail: {
+      enabled: true,
+      sendChangeEmailVerification: async ({ user, newEmail, url, token }, request) => {
+        // En développement, toujours afficher le lien dans la console
+        if (process.env.NODE_ENV !== "production") {
+          console.log("=".repeat(80));
+          console.log("📧 CHANGEMENT D'EMAIL (DEV MODE)");
+          console.log("Utilisateur:", user.email);
+          console.log("Nouvel email:", newEmail);
+          console.log("Lien de vérification:", url);
+          console.log("=".repeat(80));
+          return; // Ne pas envoyer d'email en dev
+        }
+
+        // En production, envoyer l'email réel au NOUVEAU email
+        try {
+          const { data, error } = await resend.emails.send({
+            from: `${EMAIL_CONFIG.from}`,
+            to: newEmail, // Important: envoyer au NOUVEAU email
+            subject: "Vérifiez votre nouvelle adresse email",
+            react: ChangeEmailTemplate({
+              verificationUrl: url,
+              newEmail: newEmail,
+              name: user.name || user.email,
+            }),
+          });
+
+          if (error) {
+            console.error("Erreur envoi email changement:", error);
+            throw error;
+          }
+
+          console.log("✅ Email de changement envoyé à:", newEmail, "- ID:", data?.id);
+        } catch (error) {
+          console.error("Erreur critique envoi email:", error);
+          throw error;
+        }
+      },
     },
   },
 

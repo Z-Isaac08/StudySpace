@@ -22,10 +22,32 @@ export const LoginSchema = z.object({
   password: z.string().min(1, "Le mot de passe est requis"),
 });
 
-export const UpdateUserSchema = z.object({
-  name: z.string().min(2).optional(),
-  email: z.email().optional(),
-});
+export const UpdateProfileSchema = z
+  .object({
+    name: z
+      .string()
+      .min(2, "Le nom doit contenir au moins 2 caractères")
+      .max(50, "Le nom ne peut pas dépasser 50 caractères")
+      .optional(),
+    email: z.string().email("Email invalide").optional(),
+  })
+  .refine((data) => data.name || data.email, {
+    message: "Vous devez modifier au moins un champ",
+  });
+
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Le mot de passe actuel est requis"),
+    newPassword: z
+      .string()
+      .min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères")
+      .max(128, "Le mot de passe ne peut pas dépasser 128 caractères"),
+    confirmPassword: z.string().min(1, "Veuillez confirmer le mot de passe"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
 
 // ============================================
 // WORKSPACE SCHEMAS
@@ -108,7 +130,8 @@ export const WorkspaceFilterSchema = z.object({
 
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
-export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 
 export type WorkspaceTag = z.infer<typeof WorkspaceTagSchema>;
 export type CreateWorkspaceInput = z.infer<typeof CreateWorkspaceSchema>;

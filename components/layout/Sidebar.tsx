@@ -31,7 +31,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const secondaryNavItems: NavItem[] = [
-  { label: "Paramètres", href: "/dashboard/settings", icon: Settings },
+  { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
 ];
 
 interface SidebarProps {
