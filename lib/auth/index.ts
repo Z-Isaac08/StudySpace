@@ -15,12 +15,23 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: process.env.NODE_ENV === "production",
     minPasswordLength: 8,
     maxPasswordLength: 128,
     resetPasswordTokenExpiresIn: 60 * 60, // 1 hour
 
     sendResetPassword: async ({ user, url, token }, request) => {
+      // En développement, toujours afficher le lien dans la console
+      if (process.env.NODE_ENV !== "production") {
+        console.log("=".repeat(80));
+        console.log("🔐 EMAIL DE RESET (DEV MODE)");
+        console.log("Pour:", user.email);
+        console.log("Lien de réinitialisation:", url);
+        console.log("=".repeat(80));
+        return; // Ne pas envoyer d'email en dev
+      }
+
+      // En production, envoyer l'email réel
       try {
         const { data, error } = await resend.emails.send({
           from: `${EMAIL_CONFIG.from}`,
@@ -37,7 +48,7 @@ export const auth = betterAuth({
           throw error;
         }
 
-        console.log("Email de reset envoyé:", data?.id);
+        console.log("✅ Email de reset envoyé:", data?.id);
       } catch (error) {
         console.error("Erreur critique envoi email:", error);
         throw error;
@@ -45,15 +56,26 @@ export const auth = betterAuth({
     },
 
     onPasswordReset: async ({ user }, request) => {
-      console.log(`Mot de passe réinitialisé pour: ${user.email}`);
+      console.log(`✅ Mot de passe réinitialisé pour: ${user.email}`);
     },
   },
 
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: true, // Toujours envoyer pour afficher le lien en dev
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url, token }, request) => {
+      // En développement, toujours afficher le lien dans la console
+      if (process.env.NODE_ENV !== "production") {
+        console.log("=".repeat(80));
+        console.log("📧 EMAIL DE VÉRIFICATION (DEV MODE)");
+        console.log("Pour:", user.email);
+        console.log("Lien de vérification:", url);
+        console.log("=".repeat(80));
+        return; // Ne pas envoyer d'email en dev
+      }
+
+      // En production, envoyer l'email réel
       try {
         const { data, error } = await resend.emails.send({
           from: `${EMAIL_CONFIG.from}`,
@@ -70,7 +92,7 @@ export const auth = betterAuth({
           throw error;
         }
 
-        console.log("Email de vérification envoyé:", data?.id);
+        console.log("✅ Email de vérification envoyé:", data?.id);
       } catch (error) {
         console.error("Erreur critique envoi email:", error);
         throw error;

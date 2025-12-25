@@ -1,45 +1,48 @@
 "use client";
 
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useEffect } from "react";
 
 /**
  * Hook personnalisé pour accéder facilement à l'auth
- * et initialiser la session au montage du composant
+ * Note: L'initialisation est gérée par AuthProvider dans le layout racine
  */
 export function useAuth() {
-  const store = useAuthStore();
-
-  // Initialiser la session au premier render
-  useEffect(() => {
-    if (!store.isInitialized) {
-      store.initialize();
-    }
-  }, [store]);
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.session);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const signIn = useAuthStore((state) => state.signIn);
+  const signUp = useAuthStore((state) => state.signUp);
+  const signOut = useAuthStore((state) => state.signOut);
+  const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
+  const resetPassword = useAuthStore((state) => state.resetPassword);
+  const changePassword = useAuthStore((state) => state.changePassword);
+  const verifyEmail = useAuthStore((state) => state.verifyEmail);
+  const sendVerificationEmail = useAuthStore((state) => state.sendVerificationEmail);
+  const refreshSession = useAuthStore((state) => state.refreshSession);
 
   return {
     // État
-    user: store.user,
-    session: store.session,
-    isLoading: store.isLoading,
-    isAuthenticated: !!store.user,
-    isEmailVerified: store.user?.emailVerified ?? false,
+    user,
+    session,
+    isLoading,
+    isAuthenticated: !!user,
+    isEmailVerified: user?.emailVerified ?? false,
 
     // Actions
-    signIn: store.signIn,
-    signUp: store.signUp,
-    signOut: store.signOut,
+    signIn,
+    signUp,
+    signOut,
 
     // Password management
-    requestPasswordReset: store.requestPasswordReset,
-    resetPassword: store.resetPassword,
-    changePassword: store.changePassword,
+    requestPasswordReset,
+    resetPassword,
+    changePassword,
 
     // Email verification
-    verifyEmail: store.verifyEmail,
-    sendVerificationEmail: store.sendVerificationEmail,
+    verifyEmail,
+    sendVerificationEmail,
 
     // Session
-    refreshSession: store.refreshSession,
+    refreshSession,
   };
 }

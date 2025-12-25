@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { toast } from "sonner";
@@ -47,15 +47,6 @@ export default function ForgotPasswordPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Back to Login */}
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour à la connexion
-        </Link>
-
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">
@@ -91,7 +82,8 @@ export default function ForgotPasswordPage() {
               </div>
 
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Vous n'avez pas reçu l'email ? Vérifiez vos spams ou réessayez dans quelques minutes.
+                Vous n'avez pas reçu l'email ? Vérifiez vos spams ou réessayez
+                dans quelques minutes.
               </p>
 
               <Link href="/login" className="block">

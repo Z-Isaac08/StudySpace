@@ -5,6 +5,7 @@ import { MobileSidebar, Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function DashboardLayout({
   children,
@@ -12,32 +13,30 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, checkAuth, logout } = useAuth();
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const { user, isLoading, isAuthenticated, signOut, refreshSession } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const performAuthCheck = async () => {
-      await checkAuth();
-      setHasCheckedAuth(true);
-    };
-    performAuthCheck();
-  }, [checkAuth]);
-
-  useEffect(() => {
-    // Only redirect after auth check is complete
-    if (hasCheckedAuth && !isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push("/login");
     }
-  }, [hasCheckedAuth, isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   const handleLogout = async () => {
-    await logout();
-    router.push("/");
+    try {
+      await signOut();
+      toast.success("Déconnexion réussie");
+      router.push("/login");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      toast.error("Erreur lors de la déconnexion");
+      router.push("/login"); // Rediriger quand même
+    }
   };
 
   // Loading state - show while checking auth
-  if (!hasCheckedAuth || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

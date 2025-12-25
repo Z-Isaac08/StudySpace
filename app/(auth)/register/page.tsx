@@ -64,7 +64,7 @@ function RegisterForm() {
     try {
       await signUp(email, password, name);
 
-      toast.success("Compte créé ! Vérifiez votre boîte mail 📧");
+      toast.success("Compte créé ! Vérifiez votre boîte mail pour la vérification.");
 
       // Redirect to verify-email with email and invite code if present
       const redirectUrl = inviteCode

@@ -21,8 +21,8 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // Better Auth relations
-  authSessions AuthSession[]
-  accounts     Account[]
+  sessions Session[]
+  accounts Account[]
 
   // StudySpace relations
   workspaces        WorkspaceMember[]
@@ -33,7 +33,7 @@ model User {
   @@map("users")
 }
 
-model AuthSession {
+model Session {
   id        String   @id @default(uuid())
   expiresAt DateTime
   token     String   @unique
