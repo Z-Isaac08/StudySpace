@@ -24,9 +24,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/stores/auth-store";
-import { useSession } from "@/lib/stores/session-store";
-import { useWorkspaceDetail } from "@/lib/stores/workspace-store";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useStudySession } from "@/lib/hooks/use-study-session";
+import { useWorkspaceDetail } from "@/lib/hooks/use-workspace";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -90,12 +90,12 @@ export default function WorkspaceDetailPage() {
   } = useWorkspaceDetail();
 
   const {
-    sessions,
+    studySessions,
     isCreating: isCreatingSession,
-    fetchSessions,
-    createSession,
-    deleteSession,
-  } = useSession();
+    fetchStudySessions,
+    createStudySession,
+    deleteStudySession,
+  } = useStudySession();
 
   const [copied, setCopied] = useState(false);
 
@@ -107,12 +107,12 @@ export default function WorkspaceDetailPage() {
 
   useEffect(() => {
     fetchWorkspaceDetail(workspaceId);
-    fetchSessions(workspaceId);
+    fetchStudySessions(workspaceId);
 
     return () => {
       clearCurrentWorkspace();
     };
-  }, [workspaceId, fetchWorkspaceDetail, fetchSessions, clearCurrentWorkspace]);
+  }, [workspaceId, fetchWorkspaceDetail, fetchStudySessions, clearCurrentWorkspace]);
 
   const handleCopyInviteCode = async () => {
     if (!workspace) return;
@@ -180,7 +180,9 @@ export default function WorkspaceDetailPage() {
       toast.success("Vous avez quitté le workspace");
       router.push("/dashboard/workspaces");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Impossible de quitter le workspace");
+      toast.error(
+        err.response?.data?.error || "Impossible de quitter le workspace"
+      );
     }
   };
 
@@ -237,7 +239,7 @@ export default function WorkspaceDetailPage() {
 
   const handleStartSession = async () => {
     try {
-      const session = await createSession(workspaceId);
+      const session = await createStudySession(workspaceId);
       // Redirect to session page
       router.push(`/dashboard/session/${session.id}`);
     } catch (err) {
@@ -621,7 +623,7 @@ export default function WorkspaceDetailPage() {
                                       "Voulez-vous vraiment supprimer cette session ?"
                                     )
                                   ) {
-                                    await deleteSession(session.id);
+                                    await deleteStudySession(session.id);
                                     toast.success(
                                       "Session supprimée avec succès"
                                     );

@@ -7,7 +7,7 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { UpdateWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: Params) {
             joinedAt: "asc",
           },
         },
-        sessions: {
+        studySessions: {
           take: 10,
           orderBy: {
             startedAt: "desc",
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     // Add _count for convenience
     const _count = {
       members: workspace.members.length,
-      sessions: workspace.sessions.length,
+      studySessions: workspace.studySessions.length,
       files: workspace.files.length,
     };
 

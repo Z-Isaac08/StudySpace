@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/hooks/use-auth";
 import {
   AlertCircle,
   CheckCircle2,
@@ -19,13 +19,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState, Suspense } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { toast } from "sonner";
 
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { register, isLoading } = useAuth();
+  const { signUp, isLoading } = useAuth();
   const inviteCode = searchParams.get("inviteCode");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,7 +34,6 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Password strength check
   const passwordStrength = {
@@ -51,36 +50,33 @@ function RegisterForm() {
     // Validate password match
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
+      toast.error("Les mots de passe ne correspondent pas");
       return;
     }
 
     // Validate password strength
     if (!isPasswordStrong) {
       setError("Le mot de passe ne respecte pas les critères de sécurité");
+      toast.error("Le mot de passe ne respecte pas les critères de sécurité");
       return;
     }
 
     try {
-      await register(name, email, password);
+      await signUp(email, password, name);
+
       toast.success("Compte créé ! Vérifiez votre boîte mail 📧");
 
-      // Redirect to verify-email or invite page if there's a code
+      // Redirect to verify-email with email and invite code if present
       const redirectUrl = inviteCode
-        ? `/verify-email?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}`
+        ? `/verify-email?email=${encodeURIComponent(
+            email
+          )}&inviteCode=${inviteCode}`
         : `/verify-email?email=${encodeURIComponent(email)}`;
 
       router.push(redirectUrl);
     } catch (err: any) {
-      // If error is "email_not_confirmed", redirect to verify-email
-      if (err.message?.includes("confirm")) {
-        toast.success("Compte créé ! Vérifiez votre boîte mail 📧");
-        const redirectUrl = inviteCode
-          ? `/verify-email?email=${encodeURIComponent(email)}&inviteCode=${inviteCode}`
-          : `/verify-email?email=${encodeURIComponent(email)}`;
-        router.push(redirectUrl);
-      } else {
-        setError(err.message || "Erreur lors de l'inscription");
-      }
+      setError(err.message || "Erreur lors de l'inscription");
+      toast.error(err.message || "Erreur lors de l'inscription");
     }
   };
 
@@ -103,14 +99,6 @@ function RegisterForm() {
       {/* Form Card */}
       <Card className="p-6 sm:p-8 border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Success Alert */}
-          {success && (
-            <Alert className="bg-success-50 border-success-200 text-success-700 dark:bg-success-900/20 dark:border-success-800 dark:text-success-300">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Error Alert */}
           {error && (
             <Alert variant="destructive">
@@ -390,7 +378,13 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      }
+    >
       <RegisterForm />
     </Suspense>
   );

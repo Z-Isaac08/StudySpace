@@ -7,8 +7,8 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import { EndSessionSchema } from "@/lib/validations";
+import prisma from "@/lib/prisma";
+import { EndStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
 type Params = {
@@ -19,7 +19,7 @@ type Params = {
 
 /**
  * PUT /api/sessions/[id]/end
- * End a session
+ * End a study session
  */
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
@@ -30,29 +30,31 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const { id } = await params;
 
-    // Check if session exists
-    const existingSession = await prisma.session.findUnique({
+    // Check if studySession exists
+    const existingstudySession = await prisma.studySession.findUnique({
       where: { id },
     });
 
-    if (!existingSession) {
-      return notFoundResponse("Session introuvable");
+    if (!existingstudySession) {
+      return notFoundResponse("studySession introuvable");
     }
 
     // Check if user is creator
-    if (existingSession.createdById !== user.id) {
-      return forbiddenResponse("Seul le créateur peut terminer la session");
+    if (existingstudySession.createdById !== user.id) {
+      return forbiddenResponse(
+        "Seul le créateur peut terminer la studySession"
+      );
     }
 
     // Check if already ended
-    if (existingSession.endedAt) {
-      return errorResponse("Cette session est déjà terminée", 400);
+    if (existingstudySession.endedAt) {
+      return errorResponse("Cette studySession est déjà terminée", 400);
     }
 
     const body = await request.json();
 
     // Validate input
-    const validated = EndSessionSchema.safeParse(body);
+    const validated = EndStudySessionSchema.safeParse(body);
     if (!validated.success) {
       return validationErrorResponse(validated.error);
     }
@@ -61,10 +63,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const endedAt = new Date();
     const duration = Math.floor(
-      (endedAt.getTime() - existingSession.startedAt.getTime()) / 1000
+      (endedAt.getTime() - existingstudySession.startedAt.getTime()) / 1000
     );
 
-    const session = await prisma.session.update({
+    const studySession = await prisma.studySession.update({
       where: { id },
       data: {
         endedAt,
@@ -88,9 +90,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
       },
     });
 
-    return successResponse(session);
+    return successResponse(studySession);
   } catch (error: any) {
-    console.error("End session error:", error);
+    console.error("End studySession error:", error);
     return errorResponse(error.message, 500);
   }
 }

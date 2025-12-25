@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/lib/stores/auth-store";
-import { useWorkspaces } from "@/lib/stores/workspace-store";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useWorkspaces } from "@/lib/hooks/use-workspace";
 import { Clock, FolderKanban, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

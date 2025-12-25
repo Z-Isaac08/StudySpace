@@ -103,11 +103,13 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           const queryParams = new URLSearchParams();
 
           if (params.page) queryParams.append("page", params.page.toString());
-          if (params.limit) queryParams.append("limit", params.limit.toString());
+          if (params.limit)
+            queryParams.append("limit", params.limit.toString());
           if (params.tag) queryParams.append("tag", params.tag);
           if (params.search) queryParams.append("search", params.search);
           if (params.sortBy) queryParams.append("sortBy", params.sortBy);
-          if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+          if (params.sortOrder)
+            queryParams.append("sortOrder", params.sortOrder);
 
           const { data } = await axios.get(
             `/api/workspaces?${queryParams.toString()}`
@@ -283,35 +285,3 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     { name: "WorkspaceStore" }
   )
 );
-
-// Convenience hook for workspace list
-export const useWorkspaces = () => {
-  const store = useWorkspaceStore();
-  return {
-    workspaces: store.workspaces,
-    pagination: store.pagination,
-    isLoading: store.isLoading,
-    error: store.error,
-    fetchWorkspaces: store.fetchWorkspaces,
-    createWorkspace: store.createWorkspace,
-    deleteWorkspace: store.deleteWorkspace,
-    joinWorkspace: store.joinWorkspace,
-    clearWorkspaces: store.clearWorkspaces,
-  };
-};
-
-// Convenience hook for workspace detail
-export const useWorkspaceDetail = () => {
-  const store = useWorkspaceStore();
-  return {
-    workspace: store.currentWorkspace,
-    isLoading: store.isLoading,
-    error: store.error,
-    fetchWorkspaceDetail: store.fetchWorkspaceDetail,
-    addMember: store.addMember,
-    removeMember: store.removeMember,
-    updateMemberRole: store.updateMemberRole,
-    deleteWorkspace: store.deleteWorkspace,
-    clearCurrentWorkspace: store.clearCurrentWorkspace,
-  };
-};

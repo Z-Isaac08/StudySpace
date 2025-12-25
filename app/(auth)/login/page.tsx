@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/hooks/use-auth";
 import {
   AlertCircle,
   CheckCircle2,
@@ -24,7 +24,7 @@ import { toast } from "sonner";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isLoading } = useAuth();
+  const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,27 +35,33 @@ function LoginForm() {
     const errorParam = searchParams.get("error");
     const messageParam = searchParams.get("message");
 
+    // Initialize error and success states from URL params
     if (errorParam === "auth_callback_error") {
       setError("Erreur lors de l'authentification. Veuillez réessayer.");
-    }
-
-    if (messageParam) {
+    } else if (messageParam) {
       setSuccess(messageParam);
     }
-  }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     try {
-      await login(email, password);
-      toast.success("Connexion réussie ! Bienvenue 👋");
+      await signIn(email, password);
 
-      // Check if there's an invite code to redirect to
+      toast.success("Connexion réussie ! Bienvenue");
+
+      // Check if there's a redirect or invite code
+      const redirect = searchParams.get("redirect");
       const inviteCode = searchParams.get("inviteCode");
+
       if (inviteCode) {
         router.push(`/invite/${inviteCode}`);
+      } else if (redirect) {
+        router.push(redirect);
       } else {
         router.push("/dashboard");
       }
@@ -85,7 +91,7 @@ function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Success Alert */}
           {success && (
-            <Alert className="bg-success-50 border-success-200 text-success-700 dark:bg-success-900/20 dark:border-success-800 dark:text-success-300">
+            <Alert variant="success">
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>{success}</AlertDescription>
             </Alert>

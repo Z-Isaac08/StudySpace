@@ -1,5 +1,23 @@
-import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { headers } from "next/headers";
+
+/**
+ * Get current authenticated session using Better Auth
+ * Returns null if not authenticated
+ */
+export async function getSession() {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    return session;
+  } catch (error) {
+    console.error("Get session error:", error);
+    return null;
+  }
+}
 
 /**
  * Get current authenticated user
@@ -7,23 +25,21 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function getCurrentUser() {
   try {
-    const supabase = await createClient();
+    const session = await getSession();
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    if (!authUser) {
+    if (!session?.user) {
       return null;
     }
 
-    // Get full user profile from Prisma
+    // Get full user profile from Prisma with relations
     const user = await prisma.user.findUnique({
-      where: { id: authUser.id },
+      where: { id: session.user.id },
       select: {
         id: true,
         email: true,
         name: true,
+        emailVerified: true,
+        image: true,
         createdAt: true,
         updatedAt: true,
       },

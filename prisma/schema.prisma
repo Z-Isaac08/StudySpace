@@ -8,26 +8,76 @@ datasource db {
 }
 
 // ────────────────────────────────────────────────────────────
-// USERS & AUTH
+// USERS & AUTH (Better Auth Integration)
 // ────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String?   // Null si OAuth
-  name         String
-  avatar       String?
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  // Relations
+  // Better Auth relations
+  authSessions AuthSession[]
+  accounts     Account[]
+
+  // StudySpace relations
   workspaces        WorkspaceMember[]
-  sessions          Session[]
+  studySessions     StudySession[]
   files             File[]
-  createdWorkspaces Workspace[] @relation("WorkspaceCreatedBy")
+  createdWorkspaces Workspace[]       @relation("WorkspaceCreatedBy")
 
   @@map("users")
+}
+
+model AuthSession {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
 }
 
 // ────────────────────────────────────────────────────────────
@@ -44,10 +94,10 @@ model Workspace {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  createdBy User              @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-  members   WorkspaceMember[]
-  sessions  Session[]
-  files     File[]
+  createdBy     User              @relation("WorkspaceCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  members       WorkspaceMember[]
+  studySessions StudySession[]
+  files         File[]
 
   @@map("workspaces")
 }
@@ -86,19 +136,19 @@ enum MemberRole {
 }
 
 // ────────────────────────────────────────────────────────────
-// SESSIONS
+// STUDY SESSIONS
 // ────────────────────────────────────────────────────────────
 
-model Session {
+model StudySession {
   id          String    @id @default(uuid())
   workspaceId String
   createdById String
   title       String?
   startedAt   DateTime  @default(now())
   endedAt     DateTime?
-  duration    Int?      // Secondes, calculé automatiquement
-  canvasState Json?     // État du canvas (Konva/Fabric)
-  editorState Json?     // État de l'éditeur (TipTap/Yjs)
+  duration    Int? // Secondes, calculé automatiquement
+  canvasState Json? // État du canvas (Konva/Fabric)
+  editorState Json? // État de l'éditeur (TipTap/Yjs)
   createdAt   DateTime  @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -107,7 +157,7 @@ model Session {
   @@index([workspaceId])
   @@index([createdById])
   @@index([startedAt])
-  @@map("sessions")
+  @@map("study_sessions")
 }
 
 // ────────────────────────────────────────────────────────────
@@ -119,9 +169,9 @@ model File {
   workspaceId  String
   uploadedById String
   name         String
-  size         Int      // Bytes
+  size         Int // Bytes
   mimeType     String
-  url          String   // Supabase Storage URL
+  url          String
   uploadedAt   DateTime @default(now())
 
   workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

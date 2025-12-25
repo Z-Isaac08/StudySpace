@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/lib/stores/session-store";
+import { useStudySession } from "@/lib/hooks/use-study-session";
 import {
   ArrowLeft,
   Clock,
@@ -26,15 +26,15 @@ export default function SessionPage() {
   const sessionId = params.id as string;
 
   const {
-    currentSession,
+    currentStudySession,
     isLoading,
     isEnding,
     isSaving,
-    fetchSession,
-    updateSession,
-    endSession,
-    clearCurrentSession,
-  } = useSession();
+    fetchStudySession,
+    updateStudySession,
+    endStudySession,
+    clearCurrentStudySession,
+  } = useStudySession();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [editorContent, setEditorContent] = useState("");
@@ -46,39 +46,39 @@ export default function SessionPage() {
 
   // Load session on mount
   useEffect(() => {
-    fetchSession(sessionId);
+    fetchStudySession(sessionId);
 
     return () => {
-      clearCurrentSession();
+      clearCurrentStudySession();
       if (autoSaveIntervalRef.current) {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [sessionId, fetchSession, clearCurrentSession]);
+  }, [sessionId, fetchStudySession, clearCurrentStudySession]);
 
   // Initialize canvas and editor from saved state
   useEffect(() => {
-    if (!currentSession) return;
+    if (!currentStudySession) return;
 
     // Restore editor state
-    if (currentSession.editorState?.content) {
-      setEditorContent(currentSession.editorState.content);
+    if (currentStudySession.editorState?.content) {
+      setEditorContent(currentStudySession.editorState.content);
     }
 
     // Restore canvas state
-    if (currentSession.canvasState?.dataURL && canvasRef.current) {
+    if (currentStudySession.canvasState?.dataURL && canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0);
         };
-        img.src = currentSession.canvasState.dataURL;
+        img.src = currentStudySession.canvasState.dataURL;
       }
     }
 
     // Setup canvas drawing
-    if (canvasRef.current && !currentSession.endedAt) {
+    if (canvasRef.current && !currentStudySession.endedAt) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -135,16 +135,16 @@ export default function SessionPage() {
         canvas.removeEventListener("mouseout", stopDrawing);
       };
     }
-  }, [currentSession]);
+  }, [currentStudySession]);
 
   // Auto-save every 60 seconds
   useEffect(() => {
-    if (!currentSession || currentSession.endedAt) return;
+    if (!currentStudySession || currentStudySession.endedAt) return;
 
     const saveSession = async () => {
       const canvasDataURL = canvasRef.current?.toDataURL();
 
-      await updateSession(sessionId, {
+      await updateStudySession(sessionId, {
         canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
         editorState: { content: editorContent },
       });
@@ -164,15 +164,15 @@ export default function SessionPage() {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [currentSession, sessionId, editorContent, updateSession]);
+  }, [currentStudySession, sessionId, editorContent, updateStudySession]);
 
   // Manual save
   const handleManualSave = async () => {
-    if (!currentSession) return;
+    if (!currentStudySession) return;
 
     const canvasDataURL = canvasRef.current?.toDataURL();
 
-    await updateSession(sessionId, {
+    await updateStudySession(sessionId, {
       canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
       editorState: { content: editorContent },
     });
@@ -182,7 +182,7 @@ export default function SessionPage() {
 
   // End session
   const handleEndSession = async () => {
-    if (!currentSession) return;
+    if (!currentStudySession) return;
 
     if (
       !confirm(
@@ -194,14 +194,14 @@ export default function SessionPage() {
 
     const canvasDataURL = canvasRef.current?.toDataURL();
 
-    await endSession(sessionId, {
+    await endStudySession(sessionId, {
       canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
       editorState: { content: editorContent },
     });
 
     toast.success("Session terminée avec succès");
 
-    router.push(`/dashboard/workspace/${currentSession.workspaceId}`);
+    router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
   };
 
   // Clear canvas
@@ -215,10 +215,10 @@ export default function SessionPage() {
 
   // Calculate session duration
   const getDuration = () => {
-    if (!currentSession) return "0:00";
-    const start = new Date(currentSession.startedAt);
-    const end = currentSession.endedAt
-      ? new Date(currentSession.endedAt)
+    if (!currentStudySession) return "0:00";
+    const start = new Date(currentStudySession.startedAt);
+    const end = currentStudySession.endedAt
+      ? new Date(currentStudySession.endedAt)
       : new Date();
     const diffMs = end.getTime() - start.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -229,7 +229,7 @@ export default function SessionPage() {
       : `${mins}min`;
   };
 
-  if (isLoading || !currentSession) {
+  if (isLoading || !currentStudySession) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -242,7 +242,7 @@ export default function SessionPage() {
     );
   }
 
-  const isEnded = !!currentSession.endedAt;
+  const isEnded = !!currentStudySession.endedAt;
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
@@ -250,7 +250,7 @@ export default function SessionPage() {
       <div className="flex items-center justify-between border-b p-4 sm:p-6">
         <div className="flex items-center gap-4">
           <Link
-            href={`/dashboard/workspace/${currentSession.workspaceId}`}
+            href={`/dashboard/workspace/${currentStudySession.workspaceId}`}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -258,7 +258,7 @@ export default function SessionPage() {
           </Link>
           <div>
             <h1 className="text-xl font-bold sm:text-2xl">
-              {currentSession.workspace?.name || "Session"}
+              {currentStudySession.workspace?.name || "Session"}
             </h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />

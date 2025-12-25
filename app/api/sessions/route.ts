@@ -6,8 +6,8 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import { CreateSessionSchema } from "@/lib/validations";
+import prisma from "@/lib/prisma";
+import { CreateStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
 /**
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       return forbiddenResponse("Vous n'êtes pas membre de ce workspace");
     }
 
-    const sessions = await prisma.session.findMany({
+    const sessions = await prisma.studySession.findMany({
       where: { workspaceId },
       include: {
         createdBy: {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate input
-    const validated = CreateSessionSchema.safeParse(body);
+    const validated = CreateStudySessionSchema.safeParse(body);
     if (!validated.success) {
       return validationErrorResponse(validated.error);
     }
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse("Vous n'êtes pas membre de ce workspace");
     }
 
-    const session = await prisma.session.create({
+    const session = await prisma.studySession.create({
       data: {
         workspaceId,
         createdById: user.id,

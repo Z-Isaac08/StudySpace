@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WorkspaceCard } from "@/components/workspace/WorkspaceCard";
-import { useWorkspaces } from "@/lib/stores/workspace-store";
+import { useWorkspaces } from "@/lib/hooks/use-workspace";
 import { FolderKanban, Plus, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

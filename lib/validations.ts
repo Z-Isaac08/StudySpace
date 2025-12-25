@@ -60,19 +60,19 @@ export const InviteToWorkspaceSchema = z.object({
 });
 
 // ============================================
-// SESSION SCHEMAS
+// STUDY SESSION SCHEMAS
 // ============================================
 
-export const CreateSessionSchema = z.object({
+export const CreateStudySessionSchema = z.object({
   workspaceId: z.string().min(1, "ID de workspace requis"),
 });
 
-export const UpdateSessionSchema = z.object({
+export const UpdateStudySessionSchema = z.object({
   canvasState: z.any().optional(), // JSON
   editorState: z.any().optional(), // JSON
 });
 
-export const EndSessionSchema = z.object({
+export const EndStudySessionSchema = z.object({
   canvasState: z.any().optional(), // JSON
   editorState: z.any().optional(), // JSON
 });
@@ -115,9 +115,9 @@ export type CreateWorkspaceInput = z.infer<typeof CreateWorkspaceSchema>;
 export type UpdateWorkspaceInput = z.infer<typeof UpdateWorkspaceSchema>;
 export type InviteToWorkspaceInput = z.infer<typeof InviteToWorkspaceSchema>;
 
-export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
-export type UpdateSessionInput = z.infer<typeof UpdateSessionSchema>;
-export type EndSessionInput = z.infer<typeof EndSessionSchema>;
+export type CreateStudySessionInput = z.infer<typeof CreateStudySessionSchema>;
+export type UpdateStudySessionInput = z.infer<typeof UpdateStudySessionSchema>;
+export type EndStudySessionInput = z.infer<typeof EndStudySessionSchema>;
 
 export type UploadFileInput = z.infer<typeof UploadFileSchema>;
 

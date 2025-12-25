@@ -4,31 +4,38 @@ import { MotionDiv } from "@/components/motion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import axios from "axios";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { AlertCircle, CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { toast } from "sonner";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const { sendVerificationEmail } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState("");
 
   const handleResend = async () => {
+    if (!email) {
+      toast.error("Email manquant");
+      return;
+    }
+
     setIsResending(true);
     setResendError("");
     setResendSuccess(false);
 
     try {
-      await axios.post("/api/auth/resend-verification", { email });
+      await sendVerificationEmail(email);
       setResendSuccess(true);
+      toast.success("Email de vérification renvoyé !");
     } catch (err: any) {
-      setResendError(
-        err.response?.data?.message || "Erreur lors de l'envoi de l'email"
-      );
+      setResendError(err.message || "Erreur lors de l'envoi de l'email");
+      toast.error(err.message || "Erreur lors de l'envoi de l'email");
     } finally {
       setIsResending(false);
     }
@@ -68,7 +75,7 @@ function VerifyEmailContent() {
           {/* Instructions */}
           <div className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 mb-6 text-left">
             <p className="text-sm text-primary-900 dark:text-primary-100 font-semibold mb-2">
-              📧 Prochaines étapes :
+              Prochaines étapes :
             </p>
             <ol className="text-sm text-primary-800 dark:text-primary-200 space-y-1 list-decimal list-inside">
               <li>Ouvrez votre boîte mail</li>
@@ -79,7 +86,7 @@ function VerifyEmailContent() {
 
           {/* Resend Success */}
           {resendSuccess && (
-            <Alert className="bg-success-50 border-success-200 text-success-700 dark:bg-success-900/20 dark:border-success-800 dark:text-success-300 mb-4">
+            <Alert variant="success" className="mb-4">
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>Email renvoyé avec succès !</AlertDescription>
             </Alert>

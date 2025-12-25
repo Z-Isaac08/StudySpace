@@ -1,8 +1,8 @@
 import axios from "axios";
 import { create } from "zustand";
 
-// Session type matching Prisma schema
-export interface Session {
+// StudySession type matching Prisma schema
+export interface StudySession {
   id: string;
   workspaceId: string;
   createdById: string;
@@ -26,12 +26,12 @@ export interface Session {
   };
 }
 
-interface SessionState {
-  // Current active session
-  currentSession: Session | null;
+interface StudySessionState {
+  // Current active StudySession
+  currentStudySession: StudySession | null;
 
-  // List of sessions for a workspace
-  sessions: Session[];
+  // List of StudySessions for a workspace
+  studySessions: StudySession[];
 
   // Loading states
   isLoading: boolean;
@@ -43,18 +43,18 @@ interface SessionState {
   error: string | null;
 }
 
-interface SessionActions {
-  // Fetch sessions for a workspace
-  fetchSessions: (workspaceId: string) => Promise<void>;
+interface StudySessionActions {
+  // Fetch StudySessions for a workspace
+  fetchStudySessions: (workspaceId: string) => Promise<void>;
 
-  // Create and start a new session
-  createSession: (workspaceId: string) => Promise<Session>;
+  // Create and start a new StudySession
+  createStudySession: (workspaceId: string) => Promise<StudySession>;
 
-  // Get session by ID
-  fetchSession: (sessionId: string) => Promise<void>;
+  // Get StudySession by ID
+  fetchStudySession: (sessionId: string) => Promise<void>;
 
-  // Update session state (auto-save)
-  updateSession: (
+  // Update StudySession state (auto-save)
+  updateStudySession: (
     sessionId: string,
     data: {
       canvasState?: any;
@@ -62,8 +62,8 @@ interface SessionActions {
     }
   ) => Promise<void>;
 
-  // End a session
-  endSession: (
+  // End a StudySession
+  endStudySession: (
     sessionId: string,
     data?: {
       canvasState?: any;
@@ -71,36 +71,36 @@ interface SessionActions {
     }
   ) => Promise<void>;
 
-  // Delete a session
-  deleteSession: (sessionId: string) => Promise<void>;
+  // Delete a StudySession
+  deleteStudySession: (sessionId: string) => Promise<void>;
 
-  // Clear current session
-  clearCurrentSession: () => void;
+  // Clear current StudySession
+  clearCurrentStudySession: () => void;
 
   // Clear error
   clearError: () => void;
 }
 
-type SessionStore = SessionState & SessionActions;
+type StudySessionStore = StudySessionState & StudySessionActions;
 
-export const useSessionStore = create<SessionStore>((set, get) => ({
+export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
   // Initial state
-  currentSession: null,
-  sessions: [],
+  currentStudySession: null,
+  studySessions: [],
   isLoading: false,
   isCreating: false,
   isSaving: false,
   isEnding: false,
   error: null,
 
-  // Fetch sessions for a workspace
-  fetchSessions: async (workspaceId: string) => {
+  // Fetch StudySessions for a workspace
+  fetchStudySessions: async (workspaceId: string) => {
     set({ isLoading: true, error: null });
     try {
       const { data } = await axios.get(
         `/api/sessions?workspaceId=${workspaceId}`
       );
-      set({ sessions: data.data, isLoading: false });
+      set({ studySessions: data.data, isLoading: false });
     } catch (error: any) {
       set({
         error:
@@ -112,20 +112,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // Create a new session
-  createSession: async (workspaceId: string) => {
+  // Create a new StudySession
+  createStudySession: async (workspaceId: string) => {
     set({ isCreating: true, error: null });
     try {
       const { data } = await axios.post("/api/sessions", { workspaceId });
-      const session = data.data;
+      const studySession = data.data;
 
       set({
-        currentSession: session,
-        sessions: [session, ...get().sessions],
+        currentStudySession: studySession,
+        studySessions: [studySession, ...get().studySessions],
         isCreating: false,
       });
 
-      return session;
+      return studySession;
     } catch (error: any) {
       set({
         error:
@@ -137,12 +137,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // Fetch a specific session
-  fetchSession: async (sessionId: string) => {
+  // Fetch a specific StudySession
+  fetchStudySession: async (sessionId: string) => {
     set({ isLoading: true, error: null });
     try {
       const { data } = await axios.get(`/api/sessions/${sessionId}`);
-      set({ currentSession: data.data, isLoading: false });
+      set({ currentStudySession: data.data, isLoading: false });
     } catch (error: any) {
       set({
         error:
@@ -154,8 +154,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // Update session (auto-save)
-  updateSession: async (
+  // Update StudySession (auto-save)
+  updateStudySession: async (
     sessionId: string,
     updateData: {
       canvasState?: any;
@@ -171,8 +171,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const updatedSession = data.data;
 
       set({
-        currentSession: updatedSession,
-        sessions: get().sessions.map((s) =>
+        currentStudySession: updatedSession,
+        studySessions: get().studySessions.map((s) =>
           s.id === sessionId ? updatedSession : s
         ),
         isSaving: false,
@@ -187,8 +187,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // End a session
-  endSession: async (
+  // End a StudySession
+  endStudySession: async (
     sessionId: string,
     finalData?: {
       canvasState?: any;
@@ -204,8 +204,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const endedSession = data.data;
 
       set({
-        currentSession: null,
-        sessions: get().sessions.map((s) =>
+        currentStudySession: null,
+        studySessions: get().studySessions.map((s) =>
           s.id === sessionId ? endedSession : s
         ),
         isEnding: false,
@@ -220,15 +220,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // Delete a session
-  deleteSession: async (sessionId: string) => {
+  // Delete a StudySession
+  deleteStudySession: async (sessionId: string) => {
     try {
       await axios.delete(`/api/sessions/${sessionId}`);
 
       set({
-        sessions: get().sessions.filter((s) => s.id !== sessionId),
-        currentSession:
-          get().currentSession?.id === sessionId ? null : get().currentSession,
+        studySessions: get().studySessions.filter((s) => s.id !== sessionId),
+        currentStudySession:
+          get().currentStudySession?.id === sessionId ? null : get().currentStudySession,
       });
     } catch (error: any) {
       set({
@@ -238,9 +238,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
   },
 
-  // Clear current session
-  clearCurrentSession: () => {
-    set({ currentSession: null });
+  // Clear current StudySession
+  clearCurrentStudySession: () => {
+    set({ currentStudySession: null });
   },
 
   // Clear error
@@ -248,25 +248,3 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set({ error: null });
   },
 }));
-
-// Hook for easier usage
-export const useSession = () => {
-  const store = useSessionStore();
-  return {
-    currentSession: store.currentSession,
-    sessions: store.sessions,
-    isLoading: store.isLoading,
-    isCreating: store.isCreating,
-    isSaving: store.isSaving,
-    isEnding: store.isEnding,
-    error: store.error,
-    fetchSessions: store.fetchSessions,
-    createSession: store.createSession,
-    fetchSession: store.fetchSession,
-    updateSession: store.updateSession,
-    endSession: store.endSession,
-    deleteSession: store.deleteSession,
-    clearCurrentSession: store.clearCurrentSession,
-    clearError: store.clearError,
-  };
-};

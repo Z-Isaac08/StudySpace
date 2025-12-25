@@ -1,162 +1,296 @@
-import { User } from "@/generated/prisma/client";
-import axios from "axios";
+import type { Session, User } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth/client";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { CreateUserSchema, LoginSchema } from "@/lib/validations";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
 interface AuthState {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
+  isInitialized: boolean;
+
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<void>;
+  signOut: () => Promise<void>;
+
+  requestPasswordReset: (email: string, redirectTo?: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+    revokeOtherSessions?: boolean
+  ) => Promise<void>;
+
+  verifyEmail: (token: string) => Promise<void>;
+  sendVerificationEmail: (email: string, callbackURL?: string) => Promise<void>;
+
+  refreshSession: () => Promise<void>;
+  clearSession: () => void;
+
+  initialize: () => Promise<void>;
 }
 
-interface AuthActions {
-  setUser: (user: User | null) => void;
-  setLoading: (loading: boolean) => void;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
-}
-
-type AuthStore = AuthState & AuthActions;
-
-export const useAuthStore = create<AuthStore>()(
+export const useAuthStore = create<AuthState>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initial state
         user: null,
+        session: null,
         isLoading: false,
-        isAuthenticated: false,
+        isInitialized: false,
 
-        // Actions
-        setUser: (user) =>
-          set({
-            user,
-            isAuthenticated: !!user,
-            isLoading: false,
-          }),
-
-        setLoading: (loading) => set({ isLoading: loading }),
-
-        // Login action
-        login: async (email, password) => {
+        // ========================================
+        // SIGN IN
+        // ========================================
+        signIn: async (email: string, password: string) => {
           set({ isLoading: true });
           try {
-            const { data } = await axios.post("/api/auth/login", {
+            const validated = LoginSchema.parse({ email, password });
+
+            const result = await authClient.signIn.email(
+              validated,
+              {
+                onError: (ctx) => {
+                  if (ctx.error.status === 403) {
+                    throw new Error(
+                      "Veuillez vérifier votre adresse email avant de vous connecter."
+                    );
+                  }
+                  throw new Error(getAuthErrorMessage(ctx.error));
+                },
+              }
+            );
+
+            if (result.error) {
+              throw new Error(getAuthErrorMessage(result.error));
+            }
+            if (result.data?.user) {
+              set({
+                user: result.data.user,
+                session: null,
+              });
+              await get().refreshSession();
+            }
+          } catch (error: any) {
+            set({ isLoading: false });
+            throw new Error(getAuthErrorMessage(error));
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // SIGN UP
+        // ========================================
+        signUp: async (email: string, password: string, name?: string) => {
+          set({ isLoading: true });
+          try {
+            const validated = CreateUserSchema.parse({
               email,
               password,
+              name: name || email.split("@")[0],
             });
 
-            set({
-              user: data.data.user,
-              isAuthenticated: true,
-              isLoading: false,
+            const result = await authClient.signUp.email({
+              ...validated,
+              callbackURL: `${process.env.NEXT_PUBLIC_APP_URL}/verify-email`,
             });
+
+            if (result.error) {
+              throw new Error(getAuthErrorMessage(result.error));
+            }
           } catch (error: any) {
             set({ isLoading: false });
-            throw new Error(
-              error.response?.data?.message || "Erreur lors de la connexion"
-            );
+            throw new Error(getAuthErrorMessage(error));
+          } finally {
+            set({ isLoading: false });
           }
         },
 
-        // Register action
-        register: async (name, email, password) => {
+        // ========================================
+        // SIGN OUT
+        // ========================================
+        signOut: async () => {
           set({ isLoading: true });
           try {
-            const { data } = await axios.post("/api/auth/register", {
-              name,
+            await authClient.signOut({
+              fetchOptions: {
+                onSuccess: () => {
+                  set({
+                    user: null,
+                    session: null,
+                  });
+                },
+              },
+            });
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // REQUEST PASSWORD RESET
+        // ========================================
+        requestPasswordReset: async (email: string, redirectTo?: string) => {
+          set({ isLoading: true });
+          try {
+            const result = await authClient.requestPasswordReset({
               email,
-              password,
+              redirectTo:
+                redirectTo ||
+                `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
             });
 
-            set({
-              user: data.data.user,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-          } catch (error: any) {
+            if (result.error) {
+              throw new Error(
+                result.error.message ||
+                  "Erreur lors de la demande de réinitialisation"
+              );
+            }
+          } finally {
             set({ isLoading: false });
-            throw new Error(
-              error.response?.data?.message || "Erreur lors de l'inscription"
-            );
           }
         },
 
-        // Logout action
-        logout: async () => {
+        // ========================================
+        // RESET PASSWORD
+        // ========================================
+        resetPassword: async (token: string, newPassword: string) => {
           set({ isLoading: true });
           try {
-            await axios.post("/api/auth/logout");
-
-            // Clear auth state
-            set({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
+            const result = await authClient.resetPassword({
+              newPassword,
+              token,
             });
-
-            // Clear workspace store
-            const { useWorkspaceStore } = await import("./workspace-store");
-            useWorkspaceStore.getState().clearWorkspaces();
-          } catch (error: any) {
+            if (result.error) {
+              throw new Error(
+                result.error.message || "Erreur de réinitialisation"
+              );
+            }
+          } finally {
             set({ isLoading: false });
-            throw new Error(
-              error.response?.data?.message || "Erreur lors de la déconnexion"
-            );
           }
         },
 
-        // Check authentication status
-        checkAuth: async () => {
+        // ========================================
+        // CHANGE PASSWORD
+        // ========================================
+        changePassword: async (
+          currentPassword: string,
+          newPassword: string,
+          revokeOtherSessions = false
+        ) => {
           set({ isLoading: true });
           try {
-            const { data } = await axios.get("/api/auth/me");
+            const result = await authClient.changePassword({
+              currentPassword,
+              newPassword,
+              revokeOtherSessions,
+            });
+            if (result.error) {
+              throw new Error(
+                result.error.message || "Erreur de modification du mot de passe"
+              );
+            }
+          } finally {
+            set({ isLoading: false });
+          }
+        },
 
-            set({
-              user: data.data,
-              isAuthenticated: true,
-              isLoading: false,
+        // ========================================
+        // VERIFY EMAIL (manual SPA flow)
+        // ========================================
+        verifyEmail: async (token: string) => {
+          set({ isLoading: true });
+          try {
+            const result = await authClient.verifyEmail({
+              query: { token },
             });
-          } catch (error: any) {
-            set({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
+            if (result.error) {
+              throw new Error(result.error.message || "Erreur de vérification");
+            }
+            // refresh user session after verification
+            await get().refreshSession();
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // SEND VERIFICATION EMAIL
+        // ========================================
+        sendVerificationEmail: async (email: string, callbackURL?: string) => {
+          set({ isLoading: true });
+          try {
+            const result = await authClient.sendVerificationEmail({
+              email,
+              callbackURL:
+                callbackURL ||
+                `${process.env.NEXT_PUBLIC_APP_URL}/verify-email`,
             });
+            if (result.error) {
+              throw new Error(
+                result.error.message ||
+                  "Erreur d'envoi de l'email de vérification"
+              );
+            }
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // REFRESH SESSION
+        // ========================================
+        refreshSession: async () => {
+          set({ isLoading: true });
+          try {
+            const { data } = await authClient.getSession();
+            if (data?.user && data?.session) {
+              set({
+                user: data.user,
+                session: data.session,
+              });
+            } else {
+              set({ user: null, session: null });
+            }
+          } catch {
+            set({ user: null, session: null });
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // ========================================
+        // CLEAR SESSION
+        // ========================================
+        clearSession: () => {
+          set({ user: null, session: null });
+        },
+
+        // ========================================
+        // INITIALIZE
+        // ========================================
+        initialize: async () => {
+          if (get().isInitialized) return;
+          set({ isLoading: true });
+          try {
+            await get().refreshSession();
+          } finally {
+            set({ isLoading: false, isInitialized: true });
           }
         },
       }),
       {
         name: "auth-storage",
-        // Only persist non-sensitive user info
         partialize: (state) => ({
-          user: state.user
-            ? {
-                id: state.user.id,
-                email: state.user.email,
-                name: state.user.name,
-              }
-            : null,
-          isAuthenticated: state.isAuthenticated,
+          user: state.user,
+          session: state.session,
         }),
       }
     ),
     { name: "AuthStore" }
   )
 );
-
-// Convenience hook
-export const useAuth = () => {
-  const store = useAuthStore();
-  return {
-    user: store.user,
-    isLoading: store.isLoading,
-    isAuthenticated: store.isAuthenticated,
-    login: store.login,
-    register: store.register,
-    logout: store.logout,
-    checkAuth: store.checkAuth,
-  };
-};

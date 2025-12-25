@@ -1,58 +1,8 @@
-/*
-  Warnings:
+-- CreateEnum
+CREATE TYPE "WorkspaceTag" AS ENUM ('maths', 'info', 'physique', 'chimie', 'svt', 'langues', 'droit', 'general', 'autre');
 
-  - The values [langue] on the enum `WorkspaceTag` will be removed. If these variants are still used in the database, this will fail.
-  - You are about to drop the `File` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Session` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `Workspace` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `WorkspaceMember` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- AlterEnum
-BEGIN;
-CREATE TYPE "WorkspaceTag_new" AS ENUM ('maths', 'info', 'physique', 'chimie', 'svt', 'langues', 'droit', 'autre');
-ALTER TABLE "workspaces" ALTER COLUMN "tag" TYPE "WorkspaceTag_new" USING ("tag"::text::"WorkspaceTag_new");
-ALTER TYPE "WorkspaceTag" RENAME TO "WorkspaceTag_old";
-ALTER TYPE "WorkspaceTag_new" RENAME TO "WorkspaceTag";
-DROP TYPE "public"."WorkspaceTag_old";
-COMMIT;
-
--- DropForeignKey
-ALTER TABLE "File" DROP CONSTRAINT "File_uploadedById_fkey";
-
--- DropForeignKey
-ALTER TABLE "File" DROP CONSTRAINT "File_workspaceId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Session" DROP CONSTRAINT "Session_createdById_fkey";
-
--- DropForeignKey
-ALTER TABLE "Session" DROP CONSTRAINT "Session_workspaceId_fkey";
-
--- DropForeignKey
-ALTER TABLE "Workspace" DROP CONSTRAINT "Workspace_createdById_fkey";
-
--- DropForeignKey
-ALTER TABLE "WorkspaceMember" DROP CONSTRAINT "WorkspaceMember_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "WorkspaceMember" DROP CONSTRAINT "WorkspaceMember_workspaceId_fkey";
-
--- DropTable
-DROP TABLE "File";
-
--- DropTable
-DROP TABLE "Session";
-
--- DropTable
-DROP TABLE "User";
-
--- DropTable
-DROP TABLE "Workspace";
-
--- DropTable
-DROP TABLE "WorkspaceMember";
+-- CreateEnum
+CREATE TYPE "MemberRole" AS ENUM ('OWNER', 'MEMBER');
 
 -- CreateTable
 CREATE TABLE "users" (

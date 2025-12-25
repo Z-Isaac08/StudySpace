@@ -7,8 +7,8 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import { UpdateSessionSchema } from "@/lib/validations";
+import prisma from "@/lib/prisma";
+import { UpdateStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
 type Params = {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const { id } = await params;
 
-    const session = await prisma.session.findUnique({
+    const session = await prisma.studySession.findUnique({
       where: { id },
       include: {
         workspace: {
@@ -45,7 +45,6 @@ export async function GET(request: NextRequest, { params }: Params) {
             id: true,
             name: true,
             email: true,
-            avatar: true,
           },
         },
       },
@@ -83,13 +82,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const body = await request.json();
 
     // Validate input
-    const validated = UpdateSessionSchema.safeParse(body);
+    const validated = UpdateStudySessionSchema.safeParse(body);
     if (!validated.success) {
       return validationErrorResponse(validated.error);
     }
 
     // Check if session exists
-    const existingSession = await prisma.session.findUnique({
+    const existingSession = await prisma.studySession.findUnique({
       where: { id },
     });
 
@@ -107,7 +106,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     // Update session
-    const updatedSession = await prisma.session.update({
+    const updatedSession = await prisma.studySession.update({
       where: { id },
       data: {
         canvasState: validated.data.canvasState ?? existingSession.canvasState,
@@ -149,7 +148,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     const { id } = await params;
 
-    const session = await prisma.session.findUnique({
+    const session = await prisma.studySession.findUnique({
       where: { id },
     });
 
@@ -180,7 +179,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       );
     }
 
-    await prisma.session.delete({
+    await prisma.studySession.delete({
       where: { id },
     });
 

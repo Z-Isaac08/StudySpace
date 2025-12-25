@@ -67,33 +67,57 @@
   --color-neutral-800: var(--neutral-800);
   --color-neutral-900: var(--neutral-900);
 
-  /* Success Scale */
+  /* Success Scale - Complete */
   --color-success-50: var(--success-50);
+  --color-success-100: var(--success-100);
+  --color-success-200: var(--success-200);
+  --color-success-300: var(--success-300);
+  --color-success-400: var(--success-400);
   --color-success-500: var(--success-500);
   --color-success-600: var(--success-600);
   --color-success-700: var(--success-700);
+  --color-success-800: var(--success-800);
+  --color-success-900: var(--success-900);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
 
-  /* Error Scale */
+  /* Error Scale - Complete */
   --color-error-50: var(--error-50);
+  --color-error-100: var(--error-100);
+  --color-error-200: var(--error-200);
+  --color-error-300: var(--error-300);
+  --color-error-400: var(--error-400);
   --color-error-500: var(--error-500);
   --color-error-600: var(--error-600);
   --color-error-700: var(--error-700);
+  --color-error-800: var(--error-800);
+  --color-error-900: var(--error-900);
 
-  /* Warning Scale */
+  /* Warning Scale - Complete */
   --color-warning-50: var(--warning-50);
+  --color-warning-100: var(--warning-100);
+  --color-warning-200: var(--warning-200);
+  --color-warning-300: var(--warning-300);
+  --color-warning-400: var(--warning-400);
   --color-warning-500: var(--warning-500);
   --color-warning-600: var(--warning-600);
   --color-warning-700: var(--warning-700);
+  --color-warning-800: var(--warning-800);
+  --color-warning-900: var(--warning-900);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
 
-  /* Info Scale */
+  /* Info Scale - Complete */
   --color-info-50: var(--info-50);
+  --color-info-100: var(--info-100);
+  --color-info-200: var(--info-200);
+  --color-info-300: var(--info-300);
+  --color-info-400: var(--info-400);
   --color-info-500: var(--info-500);
   --color-info-600: var(--info-600);
   --color-info-700: var(--info-700);
+  --color-info-800: var(--info-800);
+  --color-info-900: var(--info-900);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
@@ -175,35 +199,59 @@
   --accent: var(--neutral-100);
   --accent-foreground: var(--neutral-900);
 
-  /* SUCCESS GREEN - Scale (Section 4.3) */
+  /* SUCCESS GREEN - Complete Scale (Section 4.3) */
   --success-50: hsl(138 76% 97%); /* #F0FDF4 */
+  --success-100: hsl(141 84% 93%); /* #DCFCE7 */
+  --success-200: hsl(141 79% 85%); /* #BBF7D0 */
+  --success-300: hsl(142 77% 73%); /* #86EFAC */
+  --success-400: hsl(142 69% 58%); /* #4ADE80 */
   --success-500: hsl(142 71% 45%); /* #22C55E ← Principal */
   --success-600: hsl(142 76% 36%); /* #16A34A */
   --success-700: hsl(142 72% 29%); /* #15803D */
+  --success-800: hsl(143 64% 24%); /* #166534 */
+  --success-900: hsl(144 61% 20%); /* #14532D */
   --success: var(--success-500);
   --success-foreground: hsl(0 0% 100%);
 
-  /* ERROR RED - Scale (Section 4.3) */
+  /* ERROR RED - Complete Scale (Section 4.3) */
   --error-50: hsl(0 86% 97%); /* #FEF2F2 */
+  --error-100: hsl(0 93% 94%); /* #FEE2E2 */
+  --error-200: hsl(0 96% 89%); /* #FECACA */
+  --error-300: hsl(0 94% 82%); /* #FCA5A5 */
+  --error-400: hsl(0 91% 71%); /* #F87171 */
   --error-500: hsl(0 84% 60%); /* #EF4444 ← Principal */
   --error-600: hsl(0 72% 51%); /* #DC2626 */
   --error-700: hsl(0 74% 42%); /* #B91C1C */
+  --error-800: hsl(0 70% 35%); /* #991B1B */
+  --error-900: hsl(0 63% 31%); /* #7F1D1D */
   --destructive: var(--error-500);
   --destructive-foreground: hsl(0 0% 100%);
 
-  /* WARNING ORANGE - Scale (Section 4.3) */
+  /* WARNING ORANGE - Complete Scale (Section 4.3) */
   --warning-50: hsl(48 100% 96%); /* #FFFBEB */
+  --warning-100: hsl(48 96% 89%); /* #FEF3C7 */
+  --warning-200: hsl(48 97% 77%); /* #FDE68A */
+  --warning-300: hsl(46 97% 65%); /* #FCD34D */
+  --warning-400: hsl(43 96% 56%); /* #FBBF24 */
   --warning-500: hsl(38 92% 50%); /* #F59E0B ← Principal */
   --warning-600: hsl(32 95% 44%); /* #D97706 */
   --warning-700: hsl(30 84% 38%); /* #B45309 */
+  --warning-800: hsl(28 83% 26%); /* #92400E */
+  --warning-900: hsl(24 71% 24%); /* #78350F */
   --warning: var(--warning-500);
   --warning-foreground: hsl(0 0% 100%);
 
-  /* INFO SKY BLUE - Scale (Section 4.3) */
+  /* INFO SKY BLUE - Complete Scale (Section 4.3) */
   --info-50: hsl(204 100% 97%); /* #F0F9FF */
+  --info-100: hsl(204 94% 94%); /* #E0F2FE */
+  --info-200: hsl(201 94% 86%); /* #BAE6FD */
+  --info-300: hsl(199 95% 74%); /* #7DD3FC */
+  --info-400: hsl(198 93% 60%); /* #38BDF8 */
   --info-500: hsl(199 89% 48%); /* #0EA5E9 ← Principal */
   --info-600: hsl(200 98% 39%); /* #0284C7 */
   --info-700: hsl(201 96% 32%); /* #0369A1 */
+  --info-800: hsl(201 90% 27%); /* #075985 */
+  --info-900: hsl(202 80% 24%); /* #0C4A6E */
   --info: var(--info-500);
   --info-foreground: hsl(0 0% 100%);
 
@@ -264,14 +312,57 @@
   --accent: var(--neutral-800);
   --accent-foreground: hsl(0 0% 98%);
 
-  /* Feedback colors - Slightly reduced intensity */
-  --success: hsl(142 71% 40%);
+  /* Feedback colors - Complete scales for dark mode */
+  --success-50: hsl(138 76% 10%);
+  --success-100: hsl(141 84% 15%);
+  --success-200: hsl(141 79% 20%);
+  --success-300: hsl(142 77% 30%);
+  --success-400: hsl(142 69% 40%);
+  --success-500: hsl(142 71% 40%);
+  --success-600: hsl(142 76% 36%);
+  --success-700: hsl(142 72% 29%);
+  --success-800: hsl(143 64% 35%);
+  --success-900: hsl(144 61% 40%);
+  --success: var(--success-500);
   --success-foreground: hsl(0 0% 100%);
-  --destructive: hsl(0 84% 55%);
+
+  --error-50: hsl(0 86% 10%);
+  --error-100: hsl(0 93% 15%);
+  --error-200: hsl(0 96% 20%);
+  --error-300: hsl(0 94% 30%);
+  --error-400: hsl(0 91% 45%);
+  --error-500: hsl(0 84% 55%);
+  --error-600: hsl(0 72% 51%);
+  --error-700: hsl(0 74% 42%);
+  --error-800: hsl(0 70% 45%);
+  --error-900: hsl(0 63% 50%);
+  --destructive: var(--error-500);
   --destructive-foreground: hsl(0 0% 100%);
-  --warning: hsl(38 92% 45%);
+
+  --warning-50: hsl(48 100% 10%);
+  --warning-100: hsl(48 96% 15%);
+  --warning-200: hsl(48 97% 20%);
+  --warning-300: hsl(46 97% 30%);
+  --warning-400: hsl(43 96% 40%);
+  --warning-500: hsl(38 92% 45%);
+  --warning-600: hsl(32 95% 44%);
+  --warning-700: hsl(30 84% 38%);
+  --warning-800: hsl(28 83% 35%);
+  --warning-900: hsl(24 71% 40%);
+  --warning: var(--warning-500);
   --warning-foreground: hsl(0 0% 100%);
-  --info: hsl(199 89% 43%);
+
+  --info-50: hsl(204 100% 10%);
+  --info-100: hsl(204 94% 15%);
+  --info-200: hsl(201 94% 20%);
+  --info-300: hsl(199 95% 30%);
+  --info-400: hsl(198 93% 40%);
+  --info-500: hsl(199 89% 43%);
+  --info-600: hsl(200 98% 39%);
+  --info-700: hsl(201 96% 32%);
+  --info-800: hsl(201 90% 35%);
+  --info-900: hsl(202 80% 40%);
+  --info: var(--info-500);
   --info-foreground: hsl(0 0% 100%);
 
   /* Workspace tags - Reduced 20% intensity (Section 4.4) */

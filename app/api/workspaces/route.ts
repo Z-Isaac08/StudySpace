@@ -5,7 +5,7 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { CreateWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
           _count: {
             select: {
               members: true,
-              sessions: true,
+              studySessions: true,
               files: true,
             },
           },
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
         _count: {
           select: {
             members: true,
-            sessions: true,
+            studySessions: true,
             files: true,
           },
         },

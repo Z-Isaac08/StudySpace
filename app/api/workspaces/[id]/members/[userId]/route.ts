@@ -5,7 +5,7 @@ import {
   unauthorizedResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
 type Params = {

@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/layout/Header";
 import { MobileSidebar, Sidebar } from "@/components/layout/Sidebar";
-import { useAuth } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

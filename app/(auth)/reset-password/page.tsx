@@ -6,20 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import axios from "axios";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resetPassword, isLoading } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Get token from URL
+  useEffect(() => {
+    const tokenParam = searchParams.get("token");
+    if (!tokenParam) {
+      setError("Lien de réinitialisation invalide ou expiré");
+      toast.error("Lien de réinitialisation invalide");
+    }
+    setToken(tokenParam);
+  }, [searchParams]);
 
   // Password strength check
   const passwordStrength = {
@@ -33,67 +47,79 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError("");
 
+    if (!token) {
+      setError("Lien de réinitialisation invalide");
+      toast.error("Lien de réinitialisation invalide");
+      return;
+    }
+
     // Validate password match
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
+      toast.error("Les mots de passe ne correspondent pas");
       return;
     }
 
     // Validate password strength
     if (!isPasswordStrong) {
       setError("Le mot de passe ne respecte pas les critères de sécurité");
+      toast.error("Le mot de passe ne respecte pas les critères de sécurité");
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      await axios.post("/api/auth/reset-password", { password });
+      await resetPassword(token, password);
+
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 3000);
+      toast.success("Mot de passe réinitialisé avec succès !");
+      setTimeout(() => router.push("/login?message=Mot de passe modifié avec succès"), 3000);
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          "Une erreur est survenue. Veuillez réessayer"
-      );
-    } finally {
-      setIsLoading(false);
+      setError(err.message || "Erreur lors de la réinitialisation");
+      toast.error(err.message || "Erreur lors de la réinitialisation");
     }
   };
 
   if (success) {
     return (
-      <MotionDiv
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="min-h-screen flex items-center justify-center px-6 py-12 bg-neutral-50 dark:bg-neutral-950"
-      >
-        <Card className="w-full max-w-md p-8 text-center border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
-          <div className="mb-6 flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-success-100 dark:bg-success-900/20 flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-success-600 dark:text-success-400" />
+      <div className="min-h-screen flex items-center justify-center px-6 py-12">
+        <MotionDiv
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-md"
+        >
+          <Card className="p-8 text-center border-0 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 rounded-full bg-success-100 dark:bg-success-900/20 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-success-600 dark:text-success-400" />
+              </div>
             </div>
-          </div>
 
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-3">
-            Mot de passe modifié !
-          </h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-3">
+              Mot de passe modifié !
+            </h1>
 
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            Votre mot de passe a été réinitialisé avec succès.
-          </p>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+              Votre mot de passe a été réinitialisé avec succès.
+            </p>
 
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Redirection vers la page de connexion...
-          </p>
-        </Card>
-      </MotionDiv>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              Redirection vers la page de connexion...
+            </p>
+
+            <Link href="/login">
+              <Button variant="outline" className="w-full">
+                Aller à la connexion maintenant
+              </Button>
+            </Link>
+          </Card>
+        </MotionDiv>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen flex items-center justify-center px-6 py-12">
       <MotionDiv
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -227,13 +253,13 @@ function ResetPasswordForm() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
                 <Input
                   id="confirmPassword"
-                  type={showPassword ? "text" : "password"}
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className={`pl-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500 ${
+                  className={`pl-10 pr-10 h-12 bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 focus:ring-2 focus:ring-primary-500 ${
                     confirmPassword && password !== confirmPassword
                       ? "border-error-500 focus:ring-error-500"
                       : confirmPassword && password === confirmPassword
@@ -241,6 +267,23 @@ function ResetPasswordForm() {
                       : ""
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={
+                    showConfirmPassword
+                      ? "Masquer le mot de passe"
+                      : "Afficher le mot de passe"
+                  }
+                  aria-pressed={showConfirmPassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -261,6 +304,31 @@ function ResetPasswordForm() {
             </Button>
           </form>
         </Card>
+
+        {/* Help Section */}
+        {!token && error ? (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+              Le lien de réinitialisation est invalide ou a expiré.
+            </p>
+            <Link
+              href="/forgot-password"
+              className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              Demander un nouveau lien
+            </Link>
+          </div>
+        ) : (
+          <p className="mt-6 text-center text-sm text-neutral-600 dark:text-neutral-400">
+            Vous vous souvenez de votre mot de passe ?{" "}
+            <Link
+              href="/login"
+              className="font-semibold text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              Connectez-vous
+            </Link>
+          </p>
+        )}
       </MotionDiv>
     </div>
   );

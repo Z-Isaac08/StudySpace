@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useAuth } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/hooks/use-auth";
 import axios from "axios";
 import { CheckCircle, FolderKanban, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
