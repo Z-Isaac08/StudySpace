@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Github, Mail, Twitter } from "lucide-react";
 import Link from "next/link";
@@ -17,13 +18,8 @@ export function LandingFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand Section */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-xl font-bold bg-linear-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                StudySpace
-              </h3>
-              <Badge variant="outline" className="text-xs">
-                Beta
-              </Badge>
+            <div className="mb-4">
+              <Logo size="default" />
             </div>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
               La plateforme tout-en-un qui simplifie la collaboration étudiante.
@@ -165,8 +161,6 @@ export function LandingFooter() {
               >
                 CGU
               </Link>
-              <span className="text-neutral-400 dark:text-neutral-600">·</span>
-              <span>Made in France 🇫🇷</span>
             </div>
           </div>
         </div>

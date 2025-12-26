@@ -581,7 +581,7 @@ export default function Home() {
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUpVariants}
-          className="py-24 sm:py-32"
+          className="py-24 sm:py-32 bg-background"
           aria-labelledby="faq-heading"
           id="faq"
         >
@@ -619,50 +619,72 @@ export default function Home() {
           </div>
         </MotionSection>
 
-        {/* Testimonials Section - Ou Early Adopters CTA */}
+        {/* Early Adopters CTA */}
         <MotionSection
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUpVariants}
-          className="py-24 bg-neutral-50 dark:bg-neutral-900 sm:py-32"
-          aria-labelledby="testimonials-heading"
+          className="relative py-24 sm:py-32 overflow-hidden bg-linear-to-b from-background via-primary-50/30 to-background dark:from-background dark:via-primary-900/10 dark:to-background"
+          aria-labelledby="cta-heading"
         >
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="text-center py-16 bg-linear-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-2xl border border-primary-200 dark:border-primary-800">
-              <Users className="h-16 w-16 mx-auto mb-4 text-primary-600 dark:text-primary-400" />
-              <Badge className="mb-4">Places limitées</Badge>
+          {/* Decorative elements */}
+          <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="absolute top-1/4 -left-10 h-96 w-96 rounded-full bg-primary-200/20 blur-3xl dark:bg-primary-700/10" />
+            <div className="absolute bottom-1/4 -right-10 h-96 w-96 rounded-full bg-primary-300/20 blur-3xl dark:bg-primary-600/10" />
+          </div>
+
+          <div className="relative mx-auto max-w-5xl px-6 lg:px-8">
+            <div className="text-center py-16 px-6 lg:px-12 bg-background/80 dark:bg-background/50 backdrop-blur-sm rounded-3xl border-2 border-primary-200/50 dark:border-primary-800/50 shadow-2xl shadow-primary-500/10">
+              <Users className="h-16 w-16 mx-auto mb-6 text-primary-600 dark:text-primary-400" />
+              <Badge className="mb-6 text-base px-4 py-1">
+                Places limitées
+              </Badge>
               <h3
-                id="testimonials-heading"
-                className="text-3xl font-bold mb-4 text-neutral-900 dark:text-neutral-50"
+                id="cta-heading"
+                className="text-4xl lg:text-5xl font-bold mb-6 text-neutral-900 dark:text-neutral-50"
               >
                 Rejoignez les premiers testeurs
               </h3>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto text-lg">
+              <p className="text-lg lg:text-xl text-neutral-600 dark:text-neutral-400 mb-4 max-w-2xl mx-auto leading-relaxed">
                 Participez à la beta privée et influencez le développement de
                 StudySpace.
-                <br />
-                <span className="font-semibold text-primary-700 dark:text-primary-300">
-                  342/500 places restantes
-                </span>
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" asChild>
+              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mb-8">
+                342/500 places restantes
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <Button
+                  size="lg"
+                  className="h-14 px-8 text-lg shadow-lg shadow-primary-500/20"
+                  asChild
+                >
                   <Link href="/register" className={linkFocusClasses}>
                     Devenir early adopter
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 px-8 text-lg border-2"
+                  asChild
+                >
                   <Link href="/login" className={linkFocusClasses}>
-                    J'ai déjà un compte
+                    J&apos;ai déjà un compte
                   </Link>
                 </Button>
               </div>
-              <p className="mt-6 text-sm text-neutral-600 dark:text-neutral-400">
-                ✓ Gratuit à vie pour les 500 premiers · ✓ Accès prioritaire aux
-                nouvelles features
-              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-neutral-600 dark:text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-success-500" />
+                  <span>Gratuit à vie pour les 500 premiers</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-success-500" />
+                  <span>Accès prioritaire aux nouvelles features</span>
+                </div>
+              </div>
             </div>
           </div>
         </MotionSection>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/Logo";
 import { MotionDiv } from "@/components/motion";
 import Link from "next/link";
 
@@ -20,12 +21,8 @@ export default function AuthLayout({
       <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 relative bg-white dark:bg-neutral-950">
         {/* Logo */}
         <div className="absolute top-6 left-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xl font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-          >
-            <span className="text-2xl">📚</span>
-            StudySpace
+          <Link href="/" className="inline-flex hover:opacity-80 transition-opacity">
+            <Logo size="default" />
           </Link>
         </div>
 

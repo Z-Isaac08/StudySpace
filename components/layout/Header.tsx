@@ -64,7 +64,7 @@ export function Header({ user, onLogout, onMenuClick }: HeaderProps) {
               className="flex items-center gap-2 sm:gap-3 px-2 hover:bg-accent"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user.avatar || undefined} alt={user.name} />
+                <AvatarImage src={user.image || undefined} alt={user.name} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                   {initials}
                 </AvatarFallback>

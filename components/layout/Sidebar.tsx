@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,7 +10,6 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
-  BookOpen,
   FolderKanban,
   Home,
   LogOut,
@@ -51,11 +51,8 @@ function SidebarContent({
   return (
     <div className="flex h-full w-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <BookOpen className="h-7 w-7 text-primary" />
-        <span className="text-xl font-bold text-sidebar-foreground">
-          StudySpace
-        </span>
+      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+        <Logo size="default" />
       </div>
 
       {/* Main Navigation */}

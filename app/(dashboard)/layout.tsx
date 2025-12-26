@@ -75,7 +75,7 @@ export default function DashboardLayout({
       <div className="lg:pl-64">
         {/* Header */}
         <Header
-          user={user}
+          user={{ ...user, image: user.image ?? null }}
           onLogout={handleLogout}
           onMenuClick={() => setMobileMenuOpen(true)}
         />

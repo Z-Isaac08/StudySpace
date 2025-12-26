@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
@@ -23,13 +24,8 @@ export function LandingNavbar() {
       >
         {/* Logo */}
         <div className="flex lg:flex-1">
-          <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-              StudySpace
-            </span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-              Beta
-            </span>
+          <Link href="/" className="-m-1.5 p-1.5">
+            <Logo />
           </Link>
         </div>
 
@@ -48,13 +44,13 @@ export function LandingNavbar() {
         {/* Desktop navigation */}
         <div className="hidden lg:flex lg:gap-x-8">
           {navigation.map((item) => (
-            <Link
+            <a
               key={item.name}
               href={item.href}
               className="text-sm font-semibold leading-6 text-neutral-900 dark:text-neutral-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               {item.name}
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -78,13 +74,8 @@ export function LandingNavbar() {
       >
         <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-background px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-neutral-900/10">
           <div className="flex items-center justify-between">
-            <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-              <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                StudySpace
-              </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                Beta
-              </span>
+            <Link href="/" className="-m-1.5 p-1.5">
+              <Logo size="default" />
             </Link>
             <button
               type="button"
@@ -99,14 +90,14 @@ export function LandingNavbar() {
             <div className="-my-6 divide-y divide-neutral-200 dark:divide-neutral-800">
               <div className="space-y-2 py-6">
                 {navigation.map((item) => (
-                  <Link
+                  <a
                     key={item.name}
                     href={item.href}
                     className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {item.name}
-                  </Link>
+                  </a>
                 ))}
               </div>
               <div className="py-6 space-y-2">
