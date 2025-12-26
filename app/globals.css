@@ -548,3 +548,92 @@
     linear-gradient(to bottom, hsl(0, 0%, 98%, 0.02) 1px, transparent 1px);
   background-size: 32px 32px;
 }
+
+/* ========================================
+   TIPTAP EDITOR STYLES
+   ======================================== */
+
+/* Editor container */
+.ProseMirror {
+  @apply text-neutral-900 dark:text-neutral-100;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-neutral-400 dark:text-neutral-600;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Headings */
+.ProseMirror h1 {
+  @apply text-3xl font-bold mb-4;
+}
+
+.ProseMirror h2 {
+  @apply text-2xl font-bold mb-3;
+}
+
+.ProseMirror h3 {
+  @apply text-xl font-bold mb-2;
+}
+
+/* Lists */
+.ProseMirror ul {
+  @apply list-disc pl-6 mb-4;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-6 mb-4;
+}
+
+.ProseMirror li {
+  @apply mb-1;
+}
+
+/* Blockquote */
+.ProseMirror blockquote {
+  @apply border-l-4 border-primary-500 pl-4 italic text-neutral-600 dark:text-neutral-400 mb-4;
+}
+
+/* Code */
+.ProseMirror code {
+  @apply bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-neutral-100 dark:bg-neutral-800 p-4 rounded mb-4 overflow-x-auto;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Collaboration cursors */
+.collaboration-cursor__caret {
+  @apply border-l-2;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+.collaboration-cursor__label {
+  @apply text-xs text-white px-1.5 py-0.5 rounded-t;
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  user-select: none;
+  white-space: nowrap;
+}

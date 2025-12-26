@@ -2,10 +2,10 @@
 
 import { toast } from "sonner";
 
+import { TipTapEditor } from "@/components/editor/TipTapEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useStudySession } from "@/lib/hooks/use-study-session";
 import {
   ArrowLeft,
@@ -351,17 +351,11 @@ export default function SessionPage() {
           </TabsContent>
 
           <TabsContent value="editor" className="mt-4 flex-1 px-4 sm:px-6 pb-4">
-            <Card className="h-full">
-              <CardContent className="h-full p-4">
-                <Textarea
-                  value={editorContent}
-                  onChange={(e) => setEditorContent(e.target.value)}
-                  placeholder="Prenez des notes ici..."
-                  className="h-full resize-none font-mono text-sm"
-                  disabled={isEnded}
-                />
-              </CardContent>
-            </Card>
+            <TipTapEditor
+              content={editorContent}
+              onChange={setEditorContent}
+              editable={!isEnded}
+            />
           </TabsContent>
         </Tabs>
       </div>
