@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { LandingFooter } from "@/components/layout/LandingFooter";
+import { LandingNavbar } from "@/components/layout/LandingNavbar";
 import { MotionDiv, MotionSection } from "@/components/motion";
 import {
   Accordion,
@@ -48,7 +50,11 @@ export default function Home() {
       >
         Aller au contenu principal
       </a>
-      <main id="main-content">
+
+      {/* Navbar */}
+      <LandingNavbar />
+
+      <main id="main-content" className="pt-16">
         {/* Hero Section - AMÉLIORÉ */}
         <MotionSection
           initial="hidden"
@@ -261,6 +267,7 @@ export default function Home() {
           variants={fadeUpVariants}
           className="py-24 sm:py-32"
           aria-labelledby="features-heading"
+          id="features"
         >
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
@@ -576,6 +583,7 @@ export default function Home() {
           variants={fadeUpVariants}
           className="py-24 sm:py-32"
           aria-labelledby="faq-heading"
+          id="faq"
         >
           <div className="mx-auto max-w-3xl px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -661,98 +669,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer
-        className="border-t border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
-        role="contentinfo"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-50 mb-4">
-                StudySpace
-              </h3>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-                La plateforme de collaboration pour étudiants qui révolutionnera
-                vos sessions de révision.
-              </p>
-              <div className="flex gap-4">
-                <Badge variant="outline">Beta privée</Badge>
-                <Badge variant="outline">Made with ❤️ pour les étudiants</Badge>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-                Produit
-              </h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/features"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    Fonctionnalités
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/pricing"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    Tarifs
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/roadmap"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    Roadmap
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-50 mb-4">
-                Légal
-              </h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    Confidentialité
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    CGU
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className={`text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 ${linkFocusClasses}`}
-                  >
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-800 text-center">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              © {new Date().getFullYear()} StudySpace. Tous droits réservés.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }
