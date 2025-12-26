@@ -30,7 +30,7 @@ export interface WorkspaceDetail extends Workspace {
       avatar: string | null;
     };
   }>;
-  sessions: Array<{
+  studySessions: Array<{
     id: string;
     title: string | null;
     startedAt: string;
@@ -38,6 +38,18 @@ export interface WorkspaceDetail extends Workspace {
     duration: number | null;
     createdById: string;
     createdBy: {
+      id: string;
+      name: string;
+    };
+  }>;
+  files: Array<{
+    id: string;
+    name: string;
+    url: string;
+    size: number;
+    uploadedAt: string;
+    uploadedBy: {
+      id: string;
       name: string;
     };
   }>;
