@@ -74,6 +74,10 @@ interface StudySessionActions {
   // Delete a StudySession
   deleteStudySession: (sessionId: string) => Promise<void>;
 
+  // Yjs state management
+  fetchYjsState: (sessionId: string) => Promise<number[] | null>;
+  saveYjsState: (sessionId: string, yjsState: number[]) => Promise<void>;
+
   // Clear current StudySession
   clearCurrentStudySession: () => void;
 
@@ -235,6 +239,27 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
         error: error.response?.data?.error || "Erreur lors de la suppression",
       });
       throw error;
+    }
+  },
+
+  // Fetch Yjs state for collaborative editing
+  fetchYjsState: async (sessionId: string) => {
+    try {
+      const { data } = await axios.get(`/api/sessions/${sessionId}/yjs`);
+      return data.data.yjsState || null;
+    } catch (error: any) {
+      console.error("Failed to fetch Yjs state:", error);
+      return null;
+    }
+  },
+
+  // Save Yjs state to database
+  saveYjsState: async (sessionId: string, yjsState: number[]) => {
+    try {
+      await axios.post(`/api/sessions/${sessionId}/yjs`, { yjsState });
+    } catch (error: any) {
+      console.error("Failed to save Yjs state:", error);
+      // Silent failure for auto-save
     }
   },
 

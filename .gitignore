@@ -10,6 +10,10 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
+# pnpm
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
 # ================================
 # ENVIRONMENT VARIABLES
 # ================================

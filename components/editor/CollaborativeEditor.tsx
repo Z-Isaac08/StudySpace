@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useStudySession } from "@/lib/hooks/use-study-session";
+import Collaboration from "@tiptap/extension-collaboration";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -13,35 +15,140 @@ import {
   Redo,
   Undo,
 } from "lucide-react";
+import type { Channel } from "pusher-js";
+import { useEffect, useState } from "react";
+import * as Y from "yjs";
 
-interface TipTapEditorProps {
-  content?: string;
-  onChange?: (content: string) => void;
-  editable?: boolean;
+interface CollaborativeEditorProps {
+  sessionId: string;
+  userId: string;
+  userName: string;
+  initialContent?: string;
+  onSave?: (content: string) => void;
+  pusherChannel: Channel | null;
 }
 
-export function TipTapEditor({
-  content = "",
-  onChange,
-  editable = true,
-}: TipTapEditorProps) {
+export function CollaborativeEditor({
+  sessionId,
+  userId,
+  userName,
+  initialContent = "",
+  onSave,
+  pusherChannel,
+}: CollaborativeEditorProps) {
+  const [ydoc] = useState(() => new Y.Doc());
+  const { fetchYjsState, saveYjsState } = useStudySession();
+
+  // Load Yjs state from database on mount
+  useEffect(() => {
+    const loadYjsState = async () => {
+      try {
+        const yjsState = await fetchYjsState(sessionId);
+        if (yjsState && yjsState.length > 0) {
+          // Apply saved Yjs state to document
+          const update = new Uint8Array(yjsState);
+          Y.applyUpdate(ydoc, update);
+          console.log("📥 Loaded Yjs state from database");
+        }
+      } catch (error) {
+        console.error("Failed to load Yjs state:", error);
+      }
+    };
+
+    loadYjsState();
+  }, [sessionId, ydoc, fetchYjsState]);
+
+  // Save Yjs state to database periodically (every 30 seconds)
+  useEffect(() => {
+    const saveState = async () => {
+      try {
+        const state = Y.encodeStateAsUpdate(ydoc);
+        await saveYjsState(sessionId, Array.from(state));
+        console.log("💾 Saved Yjs state to database");
+      } catch (error) {
+        console.error("Failed to save Yjs state:", error);
+      }
+    };
+
+    // Save every 30 seconds
+    const interval = setInterval(saveState, 30000);
+
+    // Save on unmount
+    return () => {
+      clearInterval(interval);
+      saveState();
+    };
+  }, [sessionId, ydoc, saveYjsState]);
+
+  // Initialize TipTap editor with Yjs collaboration
   const editor = useEditor({
-    extensions: [StarterKit],
-    content,
-    editable,
-    immediatelyRender: false, // Fix SSR hydration mismatch
+    extensions: [
+      StarterKit,
+      Collaboration.configure({
+        document: ydoc,
+      }),
+    ],
+    content: initialContent,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class:
           "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[400px] px-4 py-3",
       },
     },
-    onUpdate: ({ editor }) => {
-      if (onChange) {
-        onChange(editor.getHTML());
-      }
-    },
   });
+
+  // Pusher WebSocket integration for Yjs synchronization
+  useEffect(() => {
+    if (!pusherChannel) {
+      return;
+    }
+
+    console.log("✅ Editor using Pusher channel for real-time sync");
+
+    // Listen for Yjs updates from other clients
+    const handleYjsUpdate = (data: { update: number[]; userId: string }) => {
+      if (data.userId !== userId) {
+        const update = new Uint8Array(data.update);
+        Y.applyUpdate(ydoc, update);
+        console.log("📥 Received Yjs update from", data.userId);
+      }
+    };
+
+    // Bind event listeners
+    pusherChannel.bind("client-yjs-update", handleYjsUpdate);
+
+    // Send local Yjs updates to other clients via Pusher
+    const updateHandler = (update: Uint8Array, origin: any) => {
+      if (origin !== "remote" && pusherChannel) {
+        pusherChannel.trigger("client-yjs-update", {
+          update: Array.from(update),
+          userId,
+        });
+        console.log("📤 Sent Yjs update");
+      }
+    };
+
+    ydoc.on("update", updateHandler);
+
+    // Cleanup
+    return () => {
+      ydoc.off("update", updateHandler);
+      pusherChannel.unbind("client-yjs-update", handleYjsUpdate);
+    };
+  }, [pusherChannel, userId, ydoc]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    if (!editor || !onSave) return;
+
+    const interval = setInterval(() => {
+      const content = editor.getHTML();
+      onSave(content);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [editor, onSave]);
 
   if (!editor) {
     return null;

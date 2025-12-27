@@ -2,11 +2,15 @@
 
 import { toast } from "sonner";
 
-import { TipTapEditor } from "@/components/editor/TipTapEditor";
+import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
+import { SessionPresence } from "@/components/session/SessionPresence";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { getPusherClient } from "@/lib/pusher/client";
 import {
   ArrowLeft,
   Clock,
@@ -18,12 +22,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import type { Channel } from "pusher-js";
 import { useEffect, useRef, useState } from "react";
 
 export default function SessionPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.id as string;
+  const { user } = useAuth();
 
   const {
     currentStudySession,
@@ -34,12 +40,17 @@ export default function SessionPage() {
     updateStudySession,
     endStudySession,
     clearCurrentStudySession,
+    saveYjsState,
   } = useStudySession();
+
+  const { confirm, ConfirmationDialog } = useConfirm();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [editorContent, setEditorContent] = useState("");
   const [canvasDrawing, setCanvasDrawing] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
+  const [memberCount, setMemberCount] = useState(0);
+  const ydocRef = useRef<any>(null);
 
   // Auto-save interval ref
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,6 +66,53 @@ export default function SessionPage() {
       }
     };
   }, [sessionId, fetchStudySession, clearCurrentStudySession]);
+
+  // Pusher connection for real-time collaboration (entire session)
+  useEffect(() => {
+    if (typeof window === "undefined" || !user || !currentStudySession) return;
+    if (currentStudySession.endedAt) return; // Don't connect if session ended
+
+    const pusher = getPusherClient();
+    const channelName = `presence-session-${sessionId}`;
+    const channel = pusher.subscribe(channelName);
+
+    channel.bind("pusher:subscription_succeeded", (members: any) => {
+      console.log("✅ Session connected to Pusher");
+      setMemberCount(members.count);
+      setPusherChannel(channel);
+    });
+
+    channel.bind("pusher:member_added", () => {
+      setMemberCount((prev) => prev + 1);
+    });
+
+    channel.bind("pusher:member_removed", async () => {
+      const newCount = memberCount - 1;
+      setMemberCount(newCount);
+
+      // Auto-terminate if last member left
+      if (newCount === 0 && !currentStudySession.endedAt) {
+        console.log("🔴 Last member left - auto-terminating session");
+        await handleTerminateSession(true);
+      }
+    });
+
+    // Listen for session terminated event
+    channel.bind("client-session-terminated", () => {
+      toast.info("La session a été terminée");
+      router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+    });
+
+    channel.bind("pusher:subscription_error", () => {
+      console.error("❌ Failed to connect session to Pusher");
+    });
+
+    // Cleanup
+    return () => {
+      pusher.unsubscribe(channelName);
+      setPusherChannel(null);
+    };
+  }, [sessionId, user, currentStudySession]);
 
   // Initialize canvas and editor from saved state
   useEffect(() => {
@@ -137,7 +195,7 @@ export default function SessionPage() {
     }
   }, [currentStudySession]);
 
-  // Auto-save every 60 seconds
+  // Auto-save canvas every 60 seconds (editor auto-saves separately via CollaborativeEditor)
   useEffect(() => {
     if (!currentStudySession || currentStudySession.endedAt) return;
 
@@ -146,13 +204,10 @@ export default function SessionPage() {
 
       await updateStudySession(sessionId, {
         canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
-        editorState: { content: editorContent },
       });
-
-      setLastSaveTime(new Date());
     };
 
-    // Initial save after 5 seconds
+    // Initial save after 10 seconds
     const initialTimeout = setTimeout(saveSession, 10000);
 
     // Then auto-save every 60 seconds
@@ -164,9 +219,9 @@ export default function SessionPage() {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [currentStudySession, sessionId, editorContent, updateStudySession]);
+  }, [currentStudySession, sessionId, updateStudySession]);
 
-  // Manual save
+  // Manual save (canvas only - editor auto-saves via CollaborativeEditor)
   const handleManualSave = async () => {
     if (!currentStudySession) return;
 
@@ -174,34 +229,63 @@ export default function SessionPage() {
 
     await updateStudySession(sessionId, {
       canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
-      editorState: { content: editorContent },
     });
 
-    setLastSaveTime(new Date());
+    toast.success("Canvas sauvegardé");
   };
 
-  // End session
-  const handleEndSession = async () => {
+  // Terminate session (with final save and broadcast)
+  const handleTerminateSession = async (isAutoTerminate = false) => {
     if (!currentStudySession) return;
 
-    if (
-      !confirm(
-        "Êtes-vous sûr de vouloir terminer cette session ? L'état actuel sera sauvegardé."
-      )
-    ) {
-      return;
+    // Ask confirmation if manual termination
+    if (!isAutoTerminate) {
+      const confirmed = await confirm({
+        title: "Terminer la session",
+        description:
+          "Cela va terminer la session pour tous les membres. L'état actuel sera sauvegardé. Continuer ?",
+        confirmText: "Terminer",
+        variant: "destructive",
+      });
+
+      if (!confirmed) return;
     }
 
-    const canvasDataURL = canvasRef.current?.toDataURL();
+    try {
+      // Final save: Canvas + Editor + Yjs state
+      const canvasDataURL = canvasRef.current?.toDataURL();
 
-    await endStudySession(sessionId, {
-      canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
-      editorState: { content: editorContent },
-    });
+      // Save Yjs state if available
+      if (ydocRef.current) {
+        const Y = await import("yjs");
+        const state = Y.encodeStateAsUpdate(ydocRef.current);
+        await saveYjsState(sessionId, Array.from(state));
+      }
 
-    toast.success("Session terminée avec succès");
+      // End session with final state
+      await endStudySession(sessionId, {
+        canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
+        editorState: { content: editorContent },
+      });
 
-    router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+      // Broadcast termination to all members
+      if (pusherChannel && !isAutoTerminate) {
+        pusherChannel.trigger("client-session-terminated", {
+          userId: user?.id,
+        });
+      }
+
+      toast.success(
+        isAutoTerminate
+          ? "Session terminée automatiquement"
+          : "Session terminée avec succès"
+      );
+
+      router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+    } catch (error) {
+      console.error("Failed to terminate session:", error);
+      toast.error("Erreur lors de la terminaison de la session");
+    }
   };
 
   // Clear canvas
@@ -245,7 +329,9 @@ export default function SessionPage() {
   const isEnded = !!currentStudySession.endedAt;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <>
+      <ConfirmationDialog />
+      <div className="flex h-[calc(100vh-4rem)] flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b p-4 sm:p-6">
         <div className="flex items-center gap-4">
@@ -269,11 +355,6 @@ export default function SessionPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {lastSaveTime && !isEnded && (
-            <span className="hidden text-xs text-muted-foreground sm:block">
-              Sauvegardé {new Date(lastSaveTime).toLocaleTimeString()}
-            </span>
-          )}
           {isSaving && (
             <span className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -295,7 +376,7 @@ export default function SessionPage() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={handleEndSession}
+                onClick={() => handleTerminateSession(false)}
                 disabled={isEnding}
                 className="gap-2"
               >
@@ -304,7 +385,7 @@ export default function SessionPage() {
                 ) : (
                   <Square className="h-4 w-4" />
                 )}
-                <span className="hidden sm:inline">Terminer</span>
+                <span className="hidden sm:inline">Terminer la session</span>
               </Button>
             </>
           )}
@@ -314,7 +395,15 @@ export default function SessionPage() {
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
-          <TabsList className="mx-4 mt-4 sm:mx-6">
+          {/* Session Presence - Global header showing who's connected */}
+          <div className="mx-4 mt-4 sm:mx-6">
+            <SessionPresence
+              pusherChannel={pusherChannel}
+              currentUserId={user?.id || ""}
+            />
+          </div>
+
+          <TabsList className="mx-4 sm:mx-6">
             <TabsTrigger value="whiteboard" className="gap-2">
               <Paintbrush className="h-4 w-4" />
               Tableau blanc
@@ -351,14 +440,25 @@ export default function SessionPage() {
           </TabsContent>
 
           <TabsContent value="editor" className="mt-4 flex-1 px-4 sm:px-6 pb-4">
-            <TipTapEditor
-              content={editorContent}
-              onChange={setEditorContent}
-              editable={!isEnded}
-            />
+            {user && (
+              <CollaborativeEditor
+                sessionId={sessionId}
+                userId={user.id}
+                userName={user.name}
+                initialContent={editorContent}
+                pusherChannel={pusherChannel}
+                onSave={async (content) => {
+                  setEditorContent(content);
+                  await updateStudySession(sessionId, {
+                    editorState: { content },
+                  });
+                }}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
     </div>
+    </>
   );
 }

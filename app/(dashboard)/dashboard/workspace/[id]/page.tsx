@@ -29,6 +29,7 @@ import { useStudySession } from "@/lib/hooks/use-study-session";
 import { useWorkspaceDetail } from "@/lib/hooks/use-workspace";
 import { cn } from "@/lib/utils";
 import {
+  AlertCircle,
   ArrowLeft,
   Clock,
   Copy,
@@ -248,6 +249,9 @@ export default function WorkspaceDetailPage() {
     }
   };
 
+  // Find active session (not ended)
+  const activeSession = studySessions.find((session) => !session.endedAt);
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -391,6 +395,35 @@ export default function WorkspaceDetailPage() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Active Session Alert */}
+      {activeSession && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-primary/10 p-2">
+                <AlertCircle className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium">Session en cours</p>
+                <p className="text-sm text-muted-foreground">
+                  Commencée il y a{" "}
+                  {Math.floor(
+                    (Date.now() - new Date(activeSession.startedAt).getTime()) /
+                      60000
+                  )}{" "}
+                  min
+                </p>
+              </div>
+            </div>
+            <Button asChild>
+              <Link href={`/dashboard/session/${activeSession.id}`}>
+                Rejoindre
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="members" className="space-y-4">
@@ -545,9 +578,9 @@ export default function WorkspaceDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {workspace!.sessions.length > 0 ? (
+              {workspace!.studySessions.length > 0 ? (
                 <div className="space-y-3">
-                  {workspace!.sessions.map((session) => {
+                  {workspace!.studySessions.map((session) => {
                     const startDate = new Date(session.startedAt);
                     const endDate = session.endedAt
                       ? new Date(session.endedAt)
@@ -627,7 +660,8 @@ export default function WorkspaceDetailPage() {
                                     toast.success(
                                       "Session supprimée avec succès"
                                     );
-                                    fetchWorkspaceDetail(workspaceId);
+                                    // Refetch sessions only (no tab reset)
+                                    fetchStudySessions(workspaceId);
                                   }
                                 }}
                               >

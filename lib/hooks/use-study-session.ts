@@ -27,5 +27,9 @@ export function useStudySession() {
     deleteStudySession: store.deleteStudySession,
     clearCurrentStudySession: store.clearCurrentStudySession,
     clearError: store.clearError,
+
+    // Yjs actions
+    fetchYjsState: store.fetchYjsState,
+    saveYjsState: store.saveYjsState,
   };
 }

@@ -48,7 +48,12 @@ export function getPusherClient(): Pusher {
       );
 
       pusherInstance.connection.bind("error", (err: any) => {
-        console.error("[Pusher] Connection Error:", err);
+        console.error("[Pusher] Connection Error:", {
+          error: err,
+          type: err?.type,
+          data: err?.data,
+          message: err?.error?.message || err?.message,
+        });
       });
     }
   }

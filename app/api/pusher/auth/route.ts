@@ -35,12 +35,21 @@ export async function POST(request: NextRequest) {
 
     // For presence channels
     if (channelName.startsWith("presence-")) {
+      // Generate user color for presence
+      const colors = [
+        "#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A",
+        "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9"
+      ];
+      const colorIndex = user.id.charCodeAt(0) % colors.length;
+      const userColor = colors[colorIndex];
+
       const presenceData = {
         user_id: user.id,
         user_info: {
           id: user.id,
           name: user.name,
           email: user.email,
+          color: userColor,
         },
       };
 
