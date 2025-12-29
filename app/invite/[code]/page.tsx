@@ -50,9 +50,10 @@ export default function InvitePage() {
         return;
       }
 
-      // If not authenticated, redirect to login with invite code
+      // If not authenticated, redirect to register with invite code
+      // (register page will have link to login if user already has account)
       if (!isAuthenticated) {
-        router.push(`/login?inviteCode=${inviteCode}`);
+        router.push(`/register?inviteCode=${inviteCode}`);
         return;
       }
 
@@ -63,12 +64,12 @@ export default function InvitePage() {
           inviteCode,
         });
 
-        setWorkspace(data.data);
+        setWorkspace(data.data.workspace);
         setStatus("success");
 
         // Redirect to workspace after 2 seconds
         setTimeout(() => {
-          router.push(`/dashboard/workspace/${data.data.id}`);
+          router.push(`/dashboard/workspace/${data.data.workspace.id}`);
         }, 2000);
       } catch (error: any) {
         const errorMsg = error.response?.data?.error || "Erreur inconnue";

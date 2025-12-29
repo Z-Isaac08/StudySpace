@@ -18,7 +18,7 @@ interface WorkspaceStats {
     tag: string;
     _count: {
       members: number;
-      sessions: number;
+      studySessions: number;
     };
   }>;
 }
@@ -45,9 +45,10 @@ export default function DashboardPage() {
         0
       );
       const totalSessions = workspaces.reduce(
-        (acc, w) => acc + (w._count?.sessions || 0),
+        (acc, w) => acc + (w._count?.studySessions || 0),
         0
       );
+
 
       setStats({
         totalWorkspaces: pagination?.total || workspaces.length,
@@ -190,8 +191,8 @@ export default function DashboardPage() {
                         <p className="text-sm text-muted-foreground">
                           {workspace._count.members} membre
                           {workspace._count.members > 1 ? "s" : ""} ·{" "}
-                          {workspace._count.sessions} session
-                          {workspace._count.sessions > 1 ? "s" : ""}
+                          {workspace._count.studySessions} session
+                          {workspace._count.studySessions > 1 ? "s" : ""}
                         </p>
                       </div>
                     </div>

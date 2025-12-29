@@ -12,7 +12,7 @@ export interface Workspace {
   updatedAt: string;
   _count: {
     members: number;
-    sessions: number;
+    studySessions: number;
     files: number;
   };
 }

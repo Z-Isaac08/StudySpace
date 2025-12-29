@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
 import { useWorkspaceDetail } from "@/lib/hooks/use-workspace";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ export default function WorkspaceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { confirm, ConfirmationDialog } = useConfirm();
   const workspaceId = params.id as string;
 
   const {
@@ -99,6 +101,7 @@ export default function WorkspaceDetailPage() {
   } = useStudySession();
 
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState("members");
 
   // Add member dialog state
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -113,7 +116,12 @@ export default function WorkspaceDetailPage() {
     return () => {
       clearCurrentWorkspace();
     };
-  }, [workspaceId, fetchWorkspaceDetail, fetchStudySessions, clearCurrentWorkspace]);
+  }, [
+    workspaceId,
+    fetchWorkspaceDetail,
+    fetchStudySessions,
+    clearCurrentWorkspace,
+  ]);
 
   const handleCopyInviteCode = async () => {
     if (!workspace) return;
@@ -149,11 +157,14 @@ export default function WorkspaceDetailPage() {
   };
 
   const handleRemoveMember = async (userId: string, userName: string) => {
-    if (
-      !confirm(`Êtes-vous sûr de vouloir retirer ${userName} du workspace ?`)
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Retirer un membre",
+      description: `Êtes-vous sûr de vouloir retirer ${userName} du workspace ?`,
+      confirmText: "Retirer",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     try {
       await removeMemberFromWorkspace(workspaceId, userId);
@@ -168,13 +179,15 @@ export default function WorkspaceDetailPage() {
   const handleLeaveWorkspace = async () => {
     if (!user) return;
 
-    if (
-      !confirm(
-        "Êtes-vous sûr de vouloir quitter ce workspace ? Vous devrez être réinvité pour le rejoindre à nouveau."
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Quitter le workspace",
+      description:
+        "Êtes-vous sûr de vouloir quitter ce workspace ? Vous devrez être réinvité pour le rejoindre à nouveau.",
+      confirmText: "Quitter",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     try {
       await removeMemberFromWorkspace(workspaceId, user.id);
@@ -188,13 +201,14 @@ export default function WorkspaceDetailPage() {
   };
 
   const handlePromoteToOwner = async (userId: string, userName: string) => {
-    if (
-      !confirm(
-        `Êtes-vous sûr de vouloir promouvoir ${userName} au rang de propriétaire ?`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Promouvoir en propriétaire",
+      description: `Êtes-vous sûr de vouloir promouvoir ${userName} au rang de propriétaire ?`,
+      confirmText: "Promouvoir",
+      variant: "default",
+    });
+
+    if (!confirmed) return;
 
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "OWNER");
@@ -207,13 +221,14 @@ export default function WorkspaceDetailPage() {
   };
 
   const handleDemoteToMember = async (userId: string, userName: string) => {
-    if (
-      !confirm(
-        `Êtes-vous sûr de vouloir rétrograder ${userName} au rang de membre ?`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Rétrograder en membre",
+      description: `Êtes-vous sûr de vouloir rétrograder ${userName} au rang de membre ?`,
+      confirmText: "Rétrograder",
+      variant: "default",
+    });
+
+    if (!confirmed) return;
 
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "MEMBER");
@@ -226,22 +241,61 @@ export default function WorkspaceDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce workspace ?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Supprimer le workspace",
+      description:
+        "Êtes-vous sûr de vouloir supprimer ce workspace ? Toutes les sessions et fichiers associés seront également supprimés. Cette action est irréversible.",
+      confirmText: "Supprimer",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     try {
       await deleteWorkspaceFromStore(workspaceId);
+      toast.success("Workspace supprimé avec succès");
       router.push("/dashboard/workspaces");
     } catch (err) {
       console.error("Failed to delete workspace:", err);
+      toast.error("Impossible de supprimer le workspace");
     }
   };
 
   const handleStartSession = async () => {
+    // Check if there's an active session
+    const existingActiveSession = studySessions.find((s) => !s.endedAt);
+
+    if (existingActiveSession) {
+      // Ask for confirmation before terminating existing session
+      const confirmed = await confirm({
+        title: "Session en cours",
+        description:
+          "Une session est déjà en cours. Voulez-vous la terminer et en démarrer une nouvelle ?",
+        confirmText: "Terminer et créer",
+        variant: "destructive",
+      });
+
+      if (!confirmed) {
+        // User canceled, redirect to existing session
+        router.push(`/dashboard/session/${existingActiveSession.id}`);
+        return;
+      }
+
+      // User confirmed, terminate existing session first
+      try {
+        await deleteStudySession(existingActiveSession.id);
+        toast.info("Session précédente terminée");
+      } catch (err) {
+        console.error("Failed to terminate existing session:", err);
+        toast.error("Impossible de terminer la session en cours");
+        return;
+      }
+    }
+
+    // Create new session
     try {
       const session = await createStudySession(workspaceId);
-      // Redirect to session page
+      toast.success("Nouvelle session démarrée");
       router.push(`/dashboard/session/${session.id}`);
     } catch (err) {
       console.error("Failed to start session:", err);
@@ -316,8 +370,8 @@ export default function WorkspaceDetailPage() {
             <p className="mt-1 text-muted-foreground">
               {workspace!._count.members} membre
               {workspace!._count.members > 1 ? "s" : ""} ·{" "}
-              {workspace!._count.sessions} session
-              {workspace!._count.sessions > 1 ? "s" : ""}
+              {workspace!._count.studySessions} session
+              {workspace!._count.studySessions > 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -426,7 +480,11 @@ export default function WorkspaceDetailPage() {
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="members" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="members" className="gap-2">
             <Users className="h-4 w-4" />
@@ -574,7 +632,7 @@ export default function WorkspaceDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Historique des sessions ({workspace!._count.sessions})
+                Historique des sessions ({workspace!._count.studySessions})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -651,17 +709,24 @@ export default function WorkspaceDetailPage() {
                                 onClick={async (e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (
-                                    confirm(
-                                      "Voulez-vous vraiment supprimer cette session ?"
-                                    )
-                                  ) {
+
+                                  const confirmed = await confirm({
+                                    title: "Supprimer la session",
+                                    description:
+                                      "Voulez-vous vraiment supprimer cette session ? Cette action est irréversible.",
+                                    confirmText: "Supprimer",
+                                    variant: "destructive",
+                                  });
+
+                                  if (confirmed) {
                                     await deleteStudySession(session.id);
                                     toast.success(
                                       "Session supprimée avec succès"
                                     );
-                                    // Refetch sessions only (no tab reset)
-                                    fetchStudySessions(workspaceId);
+                                    // Refetch workspace to update session list
+                                    await fetchWorkspaceDetail(workspaceId);
+                                    // Keep tab on sessions
+                                    setActiveTab("sessions");
                                   }
                                 }}
                               >
@@ -767,6 +832,9 @@ export default function WorkspaceDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog />
     </div>
   );
 }

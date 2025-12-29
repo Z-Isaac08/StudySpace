@@ -335,6 +335,7 @@ export const useAuthStore = create<AuthState>()(
           if (get().isInitialized) return;
           set({ isLoading: true });
           try {
+            // Always refresh from server (source of truth = Better Auth cookies)
             await get().refreshSession();
           } finally {
             set({ isLoading: false, isInitialized: true });
@@ -343,10 +344,9 @@ export const useAuthStore = create<AuthState>()(
       }),
       {
         name: "auth-storage",
-        partialize: (state) => ({
-          user: state.user,
-          session: state.session,
-        }),
+        // Don't persist session/user in localStorage
+        // Better Auth cookies are the source of truth
+        partialize: () => ({}),
       }
     ),
     { name: "AuthStore" }

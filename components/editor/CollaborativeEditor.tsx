@@ -1,8 +1,19 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useStudySession } from "@/lib/hooks/use-study-session";
+/**
+ * CollaborativeEditor Component
+ * Real-time collaborative text editor using TipTap + Yjs + Pusher
+ *
+ * Features:
+ * - Real-time sync via Yjs CRDTs
+ * - Cursor tracking with awareness
+ * - Auto-save with periodic persistence
+ * - Offline support with resync
+ * - Deterministic user colors
+ */
+
 import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -17,7 +28,17 @@ import {
 } from "lucide-react";
 import type { Channel } from "pusher-js";
 import { useEffect, useState } from "react";
-import * as Y from "yjs";
+
+import { Button } from "@/components/ui/button";
+import { EditorSkeleton } from "./EditorSkeleton";
+import { EditorStatusBar } from "./EditorStatusBar";
+import { OfflineBanner } from "./OfflineBanner";
+import { PresenceAvatars } from "./PresenceAvatars";
+
+import { useCollaborativeEditor } from "@/lib/hooks/use-collaborative-editor";
+import { useStudySession } from "@/lib/hooks/use-study-session";
+import type { PresenceData } from "@/lib/types/collaboration";
+import { getUserColor } from "@/lib/yjs/utils";
 
 interface CollaborativeEditorProps {
   sessionId: string;
@@ -36,109 +57,99 @@ export function CollaborativeEditor({
   onSave,
   pusherChannel,
 }: CollaborativeEditorProps) {
-  const [ydoc] = useState(() => new Y.Doc());
-  const { fetchYjsState, saveYjsState } = useStudySession();
+  const { fetchYjsState, saveYjsState, broadcastEvent } = useStudySession();
+  const [presenceUsers, setPresenceUsers] = useState<Map<number, PresenceData>>(
+    new Map()
+  );
 
-  // Load Yjs state from database on mount
-  useEffect(() => {
-    const loadYjsState = async () => {
-      try {
-        const yjsState = await fetchYjsState(sessionId);
-        if (yjsState && yjsState.length > 0) {
-          // Apply saved Yjs state to document
-          const update = new Uint8Array(yjsState);
-          Y.applyUpdate(ydoc, update);
-          console.log("📥 Loaded Yjs state from database");
-        }
-      } catch (error) {
-        console.error("Failed to load Yjs state:", error);
-      }
-    };
+  // Deterministic color for user
+  const userColor = getUserColor(userId);
 
-    loadYjsState();
-  }, [sessionId, ydoc, fetchYjsState]);
-
-  // Save Yjs state to database periodically (every 30 seconds)
-  useEffect(() => {
-    const saveState = async () => {
-      try {
-        const state = Y.encodeStateAsUpdate(ydoc);
-        await saveYjsState(sessionId, Array.from(state));
-        console.log("💾 Saved Yjs state to database");
-      } catch (error) {
-        console.error("Failed to save Yjs state:", error);
-      }
-    };
-
-    // Save every 30 seconds
-    const interval = setInterval(saveState, 30000);
-
-    // Save on unmount
-    return () => {
-      clearInterval(interval);
-      saveState();
-    };
-  }, [sessionId, ydoc, saveYjsState]);
-
-  // Initialize TipTap editor with Yjs collaboration
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Collaboration.configure({
-        document: ydoc,
-      }),
-    ],
-    content: initialContent,
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class:
-          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[400px] px-4 py-3",
-      },
-    },
+  // Use collaborative editor hook
+  const {
+    ydoc,
+    awareness,
+    provider,
+    isLoaded,
+    syncStatus,
+    isOnline,
+    lastSyncedAt,
+    forceResync,
+  } = useCollaborativeEditor({
+    sessionId,
+    userId,
+    userName,
+    pusherChannel,
+    broadcastEvent,
+    fetchYjsState: (sid) => fetchYjsState(sid),
+    saveYjsState: (sid, state) => saveYjsState(sid, state),
   });
 
-  // Pusher WebSocket integration for Yjs synchronization
+  // Initialize TipTap editor with Yjs collaboration
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit,
+        ...(ydoc
+          ? [
+              Collaboration.configure({
+                document: ydoc,
+                field: "default", // Must match the fragment name in createYjsDocument
+              }),
+            ]
+          : []),
+        ...(provider
+          ? [
+              CollaborationCaret.configure({
+                provider: provider,
+                user: {
+                  name: userName,
+                  color: userColor,
+                },
+              }),
+            ]
+          : []),
+      ],
+      immediatelyRender: false,
+      editorProps: {
+        attributes: {
+          class:
+            "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[400px] px-4 py-3",
+        },
+      },
+    },
+    [ydoc, provider] // Recreate editor when ydoc or provider changes
+  );
+
+  // Track presence/awareness
   useEffect(() => {
-    if (!pusherChannel) {
-      return;
-    }
+    if (!awareness) return;
 
-    console.log("✅ Editor using Pusher channel for real-time sync");
-
-    // Listen for Yjs updates from other clients
-    const handleYjsUpdate = (data: { update: number[]; userId: string }) => {
-      if (data.userId !== userId) {
-        const update = new Uint8Array(data.update);
-        Y.applyUpdate(ydoc, update);
-        console.log("📥 Received Yjs update from", data.userId);
-      }
+    const updateUsers = () => {
+      const states = awareness.getStates() as Map<number, PresenceData>;
+      setPresenceUsers(new Map(states));
     };
 
-    // Bind event listeners
-    pusherChannel.bind("client-yjs-update", handleYjsUpdate);
+    awareness.on("change", updateUsers);
+    updateUsers();
 
-    // Send local Yjs updates to other clients via Pusher
-    const updateHandler = (update: Uint8Array, origin: any) => {
-      if (origin !== "remote" && pusherChannel) {
-        pusherChannel.trigger("client-yjs-update", {
-          update: Array.from(update),
-          userId,
-        });
-        console.log("📤 Sent Yjs update");
-      }
-    };
-
-    ydoc.on("update", updateHandler);
-
-    // Cleanup
     return () => {
-      ydoc.off("update", updateHandler);
-      pusherChannel.unbind("client-yjs-update", handleYjsUpdate);
+      awareness.off("change", updateUsers);
     };
-  }, [pusherChannel, userId, ydoc]);
+  }, [awareness]);
 
-  // Auto-save every 30 seconds
+  // Seed with initial content if document is empty
+  useEffect(() => {
+    if (!editor || !isLoaded || !initialContent || !ydoc) return;
+
+    const fragment = ydoc.getXmlFragment("default");
+    if (fragment.length === 0 && editor.isEmpty) {
+      editor.commands.setContent(initialContent);
+      console.log("📝 Seeded empty document with initial content");
+    }
+  }, [editor, isLoaded, initialContent, ydoc]);
+
+  // Auto-save HTML content for legacy support
   useEffect(() => {
     if (!editor || !onSave) return;
 
@@ -150,119 +161,148 @@ export function CollaborativeEditor({
     return () => clearInterval(interval);
   }, [editor, onSave]);
 
-  if (!editor) {
-    return null;
+  // Loading state
+  if (!editor || !isLoaded) {
+    return <EditorSkeleton />;
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-1 p-2 border-b bg-neutral-50 dark:bg-neutral-900">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          disabled={!editor.can().chain().focus().toggleBold().run()}
-          className={
-            editor.isActive("bold") ? "bg-neutral-200 dark:bg-neutral-800" : ""
-          }
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
+    <div className="space-y-3">
+      {/* Offline/Error Banner */}
+      <OfflineBanner
+        isOnline={isOnline}
+        syncStatus={syncStatus}
+        onRetry={forceResync}
+      />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          disabled={!editor.can().chain().focus().toggleItalic().run()}
-          className={
-            editor.isActive("italic")
-              ? "bg-neutral-200 dark:bg-neutral-800"
-              : ""
-          }
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
+      <div className="border rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
+        {/* Toolbar with status */}
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2 border-b bg-neutral-50 dark:bg-neutral-900">
+          {/* Formatting buttons */}
+          <div className="flex flex-wrap gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              disabled={!editor.can().chain().focus().toggleBold().run()}
+              className={
+                editor.isActive("bold")
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
 
-        <div className="w-px h-6 bg-neutral-300 dark:bg-neutral-700 mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              disabled={!editor.can().chain().focus().toggleItalic().run()}
+              className={
+                editor.isActive("italic")
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
-          className={
-            editor.isActive("heading", { level: 2 })
-              ? "bg-neutral-200 dark:bg-neutral-800"
-              : ""
-          }
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
+            <div className="w-px h-6 bg-neutral-300 dark:bg-neutral-700 mx-1 self-center" />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={
-            editor.isActive("bulletList")
-              ? "bg-neutral-200 dark:bg-neutral-800"
-              : ""
-          }
-        >
-          <List className="h-4 w-4" />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              className={
+                editor.isActive("heading", { level: 2 })
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <Heading2 className="h-4 w-4" />
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={
-            editor.isActive("orderedList")
-              ? "bg-neutral-200 dark:bg-neutral-800"
-              : ""
-          }
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              className={
+                editor.isActive("bulletList")
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <List className="h-4 w-4" />
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={
-            editor.isActive("blockquote")
-              ? "bg-neutral-200 dark:bg-neutral-800"
-              : ""
-          }
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              className={
+                editor.isActive("orderedList")
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <ListOrdered className="h-4 w-4" />
+            </Button>
 
-        <div className="w-px h-6 bg-neutral-300 dark:bg-neutral-700 mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              className={
+                editor.isActive("blockquote")
+                  ? "bg-neutral-200 dark:bg-neutral-800"
+                  : ""
+              }
+            >
+              <Quote className="h-4 w-4" />
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().chain().focus().undo().run()}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
+            <div className="w-px h-6 bg-neutral-300 dark:bg-neutral-700 mx-1 self-center" />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().chain().focus().redo().run()}
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().undo().run()}
+              disabled={!editor.can().chain().focus().undo().run()}
+            >
+              <Undo className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().redo().run()}
+              disabled={!editor.can().chain().focus().redo().run()}
+            >
+              <Redo className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Status and presence */}
+          <div className="flex items-center gap-3">
+            <PresenceAvatars
+              users={presenceUsers}
+              currentUserId={userId}
+              maxVisible={4}
+            />
+            <EditorStatusBar
+              syncStatus={syncStatus}
+              lastSyncedAt={lastSyncedAt}
+              onRetry={forceResync}
+            />
+          </div>
+        </div>
+
+        {/* Editor Content */}
+        <EditorContent editor={editor} />
       </div>
-
-      {/* Editor Content */}
-      <EditorContent editor={editor} />
     </div>
   );
 }

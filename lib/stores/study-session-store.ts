@@ -78,6 +78,13 @@ interface StudySessionActions {
   fetchYjsState: (sessionId: string) => Promise<number[] | null>;
   saveYjsState: (sessionId: string, yjsState: number[]) => Promise<void>;
 
+  // Pusher broadcast (server-side events)
+  broadcastEvent: (
+    channel: string,
+    event: string,
+    data: unknown
+  ) => Promise<boolean>;
+
   // Clear current StudySession
   clearCurrentStudySession: () => void;
 
@@ -260,6 +267,17 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
     } catch (error: any) {
       console.error("Failed to save Yjs state:", error);
       // Silent failure for auto-save
+    }
+  },
+
+  // Broadcast event via server (more reliable than client events)
+  broadcastEvent: async (channel: string, event: string, data: unknown) => {
+    try {
+      await axios.post("/api/pusher/broadcast", { channel, event, data });
+      return true;
+    } catch (error: any) {
+      console.error("Failed to broadcast event:", error);
+      return false;
     }
   },
 

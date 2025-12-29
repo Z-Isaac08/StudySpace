@@ -25,6 +25,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, isLoading } = useAuth();
+  const inviteCode = searchParams.get("inviteCode");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -200,7 +201,7 @@ function LoginForm() {
       <p className="mt-6 text-center text-neutral-600 dark:text-neutral-400">
         Pas encore de compte ?{" "}
         <Link
-          href="/register"
+          href={inviteCode ? `/register?inviteCode=${inviteCode}` : "/register"}
           className="font-semibold text-primary-600 dark:text-primary-400 hover:underline"
         >
           Créer un compte

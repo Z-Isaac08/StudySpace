@@ -41,7 +41,7 @@ export interface WorkspaceCardProps {
   userRole: "OWNER" | "MEMBER";
   _count: {
     members: number;
-    sessions: number;
+    studySessions: number;
     files: number;
   };
   onDelete?: (id: string) => void;
@@ -177,7 +177,7 @@ export function WorkspaceCard({
                   className="h-4 w-4 transition-transform duration-200 group-hover:scale-110"
                   aria-hidden="true"
                 />
-                {_count.sessions} session{_count.sessions > 1 ? "s" : ""}
+                {_count.studySessions} session{_count.studySessions > 1 ? "s" : ""}
               </span>
             </div>
           </div>

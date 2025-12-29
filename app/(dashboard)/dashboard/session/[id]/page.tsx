@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Clock,
   Loader2,
+  LogOut,
   Paintbrush,
   Save,
   Square,
@@ -41,6 +42,7 @@ export default function SessionPage() {
     endStudySession,
     clearCurrentStudySession,
     saveYjsState,
+    broadcastEvent,
   } = useStudySession();
 
   const { confirm, ConfirmationDialog } = useConfirm();
@@ -97,8 +99,8 @@ export default function SessionPage() {
       }
     });
 
-    // Listen for session terminated event
-    channel.bind("client-session-terminated", () => {
+    // Listen for session terminated event (server event, no "client-" prefix)
+    channel.bind("session-terminated", () => {
       toast.info("La session a été terminée");
       router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
     });
@@ -234,6 +236,56 @@ export default function SessionPage() {
     toast.success("Canvas sauvegardé");
   };
 
+  // Quit session (leave without terminating for others)
+  const handleQuitSession = async () => {
+    if (!currentStudySession) return;
+
+    // Check if you're the last member - if so, should terminate instead
+    if (memberCount <= 1) {
+      const confirmed = await confirm({
+        title: "Dernière personne dans la session",
+        description:
+          "Vous êtes la dernière personne dans cette session. La quitter va la terminer automatiquement. Continuer ?",
+        confirmText: "Terminer la session",
+        variant: "destructive",
+      });
+
+      if (!confirmed) return;
+
+      // Terminate session instead of just quitting
+      await handleTerminateSession(true);
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: "Quitter la session",
+      description:
+        "Voulez-vous quitter la session ? Les autres membres pourront continuer à travailler.",
+      confirmText: "Quitter",
+      variant: "default",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      // Save current state before quitting
+      const canvasDataURL = canvasRef.current?.toDataURL();
+
+      if (ydocRef.current) {
+        const Y = await import("yjs");
+        const state = Y.encodeStateAsUpdate(ydocRef.current);
+        await saveYjsState(sessionId, Array.from(state));
+      }
+
+      // Don't end session, just navigate away
+      toast.info("Vous avez quitté la session");
+      router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+    } catch (error) {
+      console.error("Error quitting session:", error);
+      toast.error("Erreur lors de la sortie de la session");
+    }
+  };
+
   // Terminate session (with final save and broadcast)
   const handleTerminateSession = async (isAutoTerminate = false) => {
     if (!currentStudySession) return;
@@ -268,10 +320,11 @@ export default function SessionPage() {
         editorState: { content: editorContent },
       });
 
-      // Broadcast termination to all members
-      if (pusherChannel && !isAutoTerminate) {
-        pusherChannel.trigger("client-session-terminated", {
-          userId: user?.id,
+      // Broadcast termination to all members via server
+      if (!isAutoTerminate) {
+        const channelName = `presence-session-${sessionId}`;
+        await broadcastEvent(channelName, "session-terminated", {
+          odlUserId: user?.id,
         });
       }
 
@@ -374,6 +427,16 @@ export default function SessionPage() {
                 <span className="hidden sm:inline">Sauvegarder</span>
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={handleQuitSession}
+                disabled={isEnding}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Quitter</span>
+              </Button>
+              <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => handleTerminateSession(false)}
@@ -385,7 +448,7 @@ export default function SessionPage() {
                 ) : (
                   <Square className="h-4 w-4" />
                 )}
-                <span className="hidden sm:inline">Terminer la session</span>
+                <span className="hidden sm:inline">Terminer</span>
               </Button>
             </>
           )}

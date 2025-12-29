@@ -13,15 +13,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, signOut, refreshSession } = useAuth();
+  const { user, isLoading, isInitialized, isAuthenticated, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (only after initialization)
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isInitialized && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isInitialized, isAuthenticated, router]);
 
   const handleLogout = async () => {
     try {
@@ -35,8 +35,8 @@ export default function DashboardLayout({
     }
   };
 
-  // Loading state - show while checking auth
-  if (isLoading) {
+  // Loading state - show while initializing or checking auth
+  if (!isInitialized || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

@@ -10,6 +10,7 @@ export function useAuth() {
   const user = useAuthStore((state) => state.user);
   const session = useAuthStore((state) => state.session);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
   const signIn = useAuthStore((state) => state.signIn);
   const signUp = useAuthStore((state) => state.signUp);
   const signOut = useAuthStore((state) => state.signOut);
@@ -27,6 +28,7 @@ export function useAuth() {
     user,
     session,
     isLoading,
+    isInitialized,
     isAuthenticated: !!user,
     isEmailVerified: user?.emailVerified ?? false,
 

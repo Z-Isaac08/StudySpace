@@ -31,5 +31,8 @@ export function useStudySession() {
     // Yjs actions
     fetchYjsState: store.fetchYjsState,
     saveYjsState: store.saveYjsState,
+
+    // Pusher broadcast (server-side events)
+    broadcastEvent: store.broadcastEvent,
   };
 }
