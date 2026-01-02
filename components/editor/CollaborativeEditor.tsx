@@ -23,8 +23,6 @@ import {
   List,
   ListOrdered,
   Quote,
-  Redo,
-  Undo,
 } from "lucide-react";
 import type { Channel } from "pusher-js";
 import { useEffect, useState } from "react";
@@ -81,15 +79,18 @@ export function CollaborativeEditor({
     userName,
     pusherChannel,
     broadcastEvent,
-    fetchYjsState: (sid) => fetchYjsState(sid),
-    saveYjsState: (sid, state) => saveYjsState(sid, state),
+    fetchYjsState,
+    saveYjsState,
   });
 
   // Initialize TipTap editor with Yjs collaboration
   const editor = useEditor(
     {
       extensions: [
-        StarterKit,
+        // Disable undoRedo in StarterKit - Collaboration has its own undo/redo
+        StarterKit.configure({
+          undoRedo: false,
+        }),
         ...(ydoc
           ? [
               Collaboration.configure({
@@ -114,7 +115,7 @@ export function CollaborativeEditor({
       editorProps: {
         attributes: {
           class:
-            "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[400px] px-4 py-3",
+            "prose prose-sm sm:prose-base max-w-none focus:outline-none h-full px-4 py-3",
         },
       },
     },
@@ -167,7 +168,7 @@ export function CollaborativeEditor({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-full flex-col">
       {/* Offline/Error Banner */}
       <OfflineBanner
         isOnline={isOnline}
@@ -175,7 +176,7 @@ export function CollaborativeEditor({
         onRetry={forceResync}
       />
 
-      <div className="border rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
+      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border bg-white dark:bg-neutral-950">
         {/* Toolbar with status */}
         <div className="flex flex-wrap items-center justify-between gap-2 p-2 border-b bg-neutral-50 dark:bg-neutral-900">
           {/* Formatting buttons */}
@@ -264,25 +265,6 @@ export function CollaborativeEditor({
               <Quote className="h-4 w-4" />
             </Button>
 
-            <div className="w-px h-6 bg-neutral-300 dark:bg-neutral-700 mx-1 self-center" />
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => editor.chain().focus().undo().run()}
-              disabled={!editor.can().chain().focus().undo().run()}
-            >
-              <Undo className="h-4 w-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => editor.chain().focus().redo().run()}
-              disabled={!editor.can().chain().focus().redo().run()}
-            >
-              <Redo className="h-4 w-4" />
-            </Button>
           </div>
 
           {/* Status and presence */}
@@ -301,7 +283,9 @@ export function CollaborativeEditor({
         </div>
 
         {/* Editor Content */}
-        <EditorContent editor={editor} />
+        <div className="flex-1 overflow-y-auto">
+          <EditorContent editor={editor} className="h-full" />
+        </div>
       </div>
     </div>
   );

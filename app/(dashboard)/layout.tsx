@@ -3,7 +3,7 @@
 import { Header } from "@/components/layout/Header";
 import { MobileSidebar, Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,8 +13,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading, isInitialized, isAuthenticated, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Check if we're on a session page (fullscreen mode)
+  const isSessionPage = pathname?.startsWith("/dashboard/session/");
 
   // Redirect to login if not authenticated (only after initialization)
   useEffect(() => {
@@ -52,6 +56,16 @@ export default function DashboardLayout({
     return null;
   }
 
+  // Fullscreen mode for session pages (no sidebar, no header)
+  if (isSessionPage) {
+    return (
+      <div className="h-screen bg-background">
+        {children}
+      </div>
+    );
+  }
+
+  // Normal dashboard layout
   return (
     <div className="min-h-screen bg-background">
       <a

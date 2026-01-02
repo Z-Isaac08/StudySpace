@@ -3,28 +3,72 @@
 import { toast } from "sonner";
 
 import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
-import { SessionPresence } from "@/components/session/SessionPresence";
+import { FloatingSessionHeader } from "@/components/session/FloatingSessionHeader";
+import { PrivateNotesEditor } from "@/components/session/PrivateNotesEditor";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
-import { useAuth } from "@/lib/hooks/use-auth";
 import { getPusherClient } from "@/lib/pusher/client";
-import {
-  ArrowLeft,
-  Clock,
-  Loader2,
-  LogOut,
-  Paintbrush,
-  Save,
-  Square,
-  Type,
-} from "lucide-react";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { Loader2, NotebookPen, Paintbrush, Type, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import type { Channel } from "pusher-js";
 import { useEffect, useRef, useState } from "react";
+
+// Tag colors for panel accents
+const tagPanelColors: Record<string, { border: string; header: string; icon: string }> = {
+  maths: {
+    border: "border-tag-maths/30",
+    header: "border-b-tag-maths/30",
+    icon: "text-tag-maths",
+  },
+  info: {
+    border: "border-tag-info/30",
+    header: "border-b-tag-info/30",
+    icon: "text-tag-info",
+  },
+  physique: {
+    border: "border-tag-physique/30",
+    header: "border-b-tag-physique/30",
+    icon: "text-tag-physique",
+  },
+  chimie: {
+    border: "border-tag-chimie/30",
+    header: "border-b-tag-chimie/30",
+    icon: "text-tag-chimie",
+  },
+  svt: {
+    border: "border-success/30",
+    header: "border-b-success/30",
+    icon: "text-success",
+  },
+  langues: {
+    border: "border-tag-langues/30",
+    header: "border-b-tag-langues/30",
+    icon: "text-tag-langues",
+  },
+  droit: {
+    border: "border-tag-droit/30",
+    header: "border-b-tag-droit/30",
+    icon: "text-tag-droit",
+  },
+  general: {
+    border: "border-tag-general/30",
+    header: "border-b-tag-general/30",
+    icon: "text-tag-general",
+  },
+  autre: {
+    border: "border-neutral-300",
+    header: "border-b-neutral-300",
+    icon: "text-neutral-500",
+  },
+};
 
 export default function SessionPage() {
   const params = useParams();
@@ -52,6 +96,7 @@ export default function SessionPage() {
   const [canvasDrawing, setCanvasDrawing] = useState(false);
   const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
   const [memberCount, setMemberCount] = useState(0);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const ydocRef = useRef<any>(null);
 
   // Auto-save interval ref
@@ -88,15 +133,14 @@ export default function SessionPage() {
       setMemberCount((prev) => prev + 1);
     });
 
-    channel.bind("pusher:member_removed", async () => {
-      const newCount = memberCount - 1;
-      setMemberCount(newCount);
-
-      // Auto-terminate if last member left
-      if (newCount === 0 && !currentStudySession.endedAt) {
-        console.log("🔴 Last member left - auto-terminating session");
-        await handleTerminateSession(true);
-      }
+    channel.bind("pusher:member_removed", () => {
+      // Use functional update to get the latest memberCount
+      setMemberCount((prev) => {
+        const newCount = prev - 1;
+        // Note: Auto-terminate logic removed - session stays active
+        // until explicitly terminated by a member
+        return newCount;
+      });
     });
 
     // Listen for session terminated event (server event, no "client-" prefix)
@@ -368,7 +412,7 @@ export default function SessionPage() {
 
   if (isLoading || !currentStudySession) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
           <p className="mt-4 text-muted-foreground">
@@ -380,148 +424,148 @@ export default function SessionPage() {
   }
 
   const isEnded = !!currentStudySession.endedAt;
+  const workspaceTag = currentStudySession.workspace?.tag || "autre";
+  const panelColors = tagPanelColors[workspaceTag] || tagPanelColors.autre;
 
   return (
     <>
       <ConfirmationDialog />
-      <div className="flex h-[calc(100vh-4rem)] flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b p-4 sm:p-6">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/dashboard/workspace/${currentStudySession.workspaceId}`}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      <div className="relative flex h-screen flex-col overflow-hidden">
+        {/* Floating Header */}
+        <FloatingSessionHeader
+          workspaceId={currentStudySession.workspaceId}
+          workspaceName={currentStudySession.workspace?.name || "Session"}
+          workspaceTag={currentStudySession.workspace?.tag}
+          duration={getDuration()}
+          memberCount={memberCount}
+          isEnded={isEnded}
+          isSaving={isSaving}
+          isEnding={isEnding}
+          isNotesOpen={isNotesOpen}
+          onSave={handleManualSave}
+          onQuit={handleQuitSession}
+          onTerminate={() => handleTerminateSession(false)}
+          onToggleNotes={() => setIsNotesOpen((prev) => !prev)}
+        />
+
+        {/* Main content - Split-screen layout */}
+        <div className="flex flex-1 overflow-hidden pt-14 px-2 pb-2">
+          <div className={cn(
+            "flex-1 transition-all duration-300",
+            isNotesOpen ? "mr-80" : ""
+          )}>
+            <ResizablePanelGroup orientation="horizontal" className="h-full">
+            {/* Canvas Panel - 60% */}
+            <ResizablePanel defaultSize={60} minSize={30}>
+              <div className={cn(
+                "relative h-full rounded-lg border-2 bg-card p-1",
+                panelColors.border
+              )}>
+                {/* Canvas Header */}
+                <div className={cn(
+                  "flex items-center justify-between px-3 py-2 border-b",
+                  panelColors.header
+                )}>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Paintbrush className={cn("h-4 w-4", panelColors.icon)} />
+                    <span className="text-muted-foreground">Canvas</span>
+                  </div>
+                  {!isEnded && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearCanvas}
+                      className="h-7 text-xs"
+                    >
+                      Effacer
+                    </Button>
+                  )}
+                </div>
+                {/* Canvas Area */}
+                <div className="relative h-[calc(100%-2.5rem)]">
+                  <canvas
+                    ref={canvasRef}
+                    className="h-full w-full cursor-crosshair bg-white"
+                    style={{ touchAction: "none" }}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Editor Panel - 40% */}
+            <ResizablePanel defaultSize={40} minSize={25}>
+              <div className={cn(
+                "relative h-full rounded-lg border-2 bg-card p-1",
+                panelColors.border
+              )}>
+                {/* Editor Header */}
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-2 border-b text-sm font-medium",
+                  panelColors.header
+                )}>
+                  <Type className={cn("h-4 w-4", panelColors.icon)} />
+                  <span className="text-muted-foreground">Éditeur collaboratif</span>
+                </div>
+                {/* Editor Area */}
+                <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                  {user && (
+                    <CollaborativeEditor
+                      sessionId={sessionId}
+                      userId={user.id}
+                      userName={user.name}
+                      initialContent={editorContent}
+                      pusherChannel={pusherChannel}
+                      onSave={async (content) => {
+                        setEditorContent(content);
+                        await updateStudySession(sessionId, {
+                          editorState: { content },
+                        });
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+
+          {/* Notes Sidebar */}
+          <div
+            className={cn(
+              "fixed right-0 top-14 bottom-0 w-80 border-l bg-card shadow-xl",
+              "transform transition-transform duration-300 ease-in-out",
+              isNotesOpen ? "translate-x-0" : "translate-x-full"
+            )}
           >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold sm:text-2xl">
-              {currentStudySession.workspace?.name || "Session"}
-            </h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{getDuration()}</span>
-              {isEnded && <span className="text-error-500">• Terminée</span>}
+            {/* Sidebar Header */}
+            <div className={cn(
+              "flex items-center justify-between px-4 py-3 border-b",
+              panelColors.header
+            )}>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <NotebookPen className={cn("h-4 w-4", panelColors.icon)} />
+                <span className="text-muted-foreground">Mes notes</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setIsNotesOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {/* Notes Editor */}
+            <div className="h-[calc(100%-3.5rem)]">
+              {isNotesOpen && (
+                <PrivateNotesEditor sessionId={sessionId} />
+              )}
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {isSaving && (
-            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Sauvegarde...
-            </span>
-          )}
-          {!isEnded && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualSave}
-                disabled={isSaving}
-                className="gap-2"
-              >
-                <Save className="h-4 w-4" />
-                <span className="hidden sm:inline">Sauvegarder</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleQuitSession}
-                disabled={isEnding}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Quitter</span>
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleTerminateSession(false)}
-                disabled={isEnding}
-                className="gap-2"
-              >
-                {isEnding ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Terminer</span>
-              </Button>
-            </>
-          )}
-        </div>
       </div>
-
-      {/* Main content */}
-      <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
-          {/* Session Presence - Global header showing who's connected */}
-          <div className="mx-4 mt-4 sm:mx-6">
-            <SessionPresence
-              pusherChannel={pusherChannel}
-              currentUserId={user?.id || ""}
-            />
-          </div>
-
-          <TabsList className="mx-4 sm:mx-6">
-            <TabsTrigger value="whiteboard" className="gap-2">
-              <Paintbrush className="h-4 w-4" />
-              Tableau blanc
-            </TabsTrigger>
-            <TabsTrigger value="editor" className="gap-2">
-              <Type className="h-4 w-4" />
-              Éditeur
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent
-            value="whiteboard"
-            className="mt-4 flex-1 px-4 sm:px-6 pb-4"
-          >
-            <Card className="h-full">
-              <CardContent className="relative h-full p-0">
-                <canvas
-                  ref={canvasRef}
-                  className="h-full w-full cursor-default rounded-lg border"
-                  style={{ touchAction: "none" }}
-                />
-                {!isEnded && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearCanvas}
-                    className="absolute bottom-4 right-4"
-                  >
-                    Effacer
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="editor" className="mt-4 flex-1 px-4 sm:px-6 pb-4">
-            {user && (
-              <CollaborativeEditor
-                sessionId={sessionId}
-                userId={user.id}
-                userName={user.name}
-                initialContent={editorContent}
-                pusherChannel={pusherChannel}
-                onSave={async (content) => {
-                  setEditorContent(content);
-                  await updateStudySession(sessionId, {
-                    editorState: { content },
-                  });
-                }}
-              />
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
     </>
   );
 }

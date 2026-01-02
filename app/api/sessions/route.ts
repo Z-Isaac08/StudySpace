@@ -7,6 +7,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getPusherServer } from "@/lib/pusher/server";
 import { CreateStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -106,6 +107,16 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Broadcast session-created event to workspace members
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(`private-workspace-${workspaceId}`, "session-created", {
+        session,
+      });
+    } catch (err) {
+      console.error("Failed to broadcast session-created:", err);
+    }
 
     return successResponse(session, 201);
   } catch (error: any) {

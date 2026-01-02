@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getPusherServer } from "@/lib/pusher/server";
 import { EndStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -79,6 +80,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
           select: {
             id: true,
             name: true,
+            tag: true,
           },
         },
         createdBy: {
@@ -89,6 +91,18 @@ export async function PUT(request: NextRequest, { params }: Params) {
         },
       },
     });
+
+    // Broadcast session-ended event to workspace members
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(
+        `private-workspace-${existingstudySession.workspaceId}`,
+        "session-ended",
+        { sessionId: id }
+      );
+    } catch (err) {
+      console.error("Failed to broadcast session-ended:", err);
+    }
 
     return successResponse(studySession);
   } catch (error: any) {

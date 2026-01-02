@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getPusherServer } from "@/lib/pusher/server";
 import { UpdateWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -166,6 +167,15 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       return forbiddenResponse(
         "Seul le propriétaire peut supprimer le workspace"
       );
+    }
+
+    // Broadcast workspace-deleted event BEFORE deleting
+    // (so members still have access to the channel)
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(`private-workspace-${id}`, "workspace-deleted", {});
+    } catch (err) {
+      console.error("Failed to broadcast workspace-deleted:", err);
     }
 
     await prisma.workspace.delete({

@@ -47,7 +47,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { getPusherClient } from "@/lib/pusher/client";
+import type { Channel } from "pusher-js";
+import type { StudySession } from "@/lib/stores/study-session-store";
 
 const tagLabels: Record<string, string> = {
   maths: "Maths",
@@ -122,6 +125,61 @@ export default function WorkspaceDetailPage() {
     fetchStudySessions,
     clearCurrentWorkspace,
   ]);
+
+  // Real-time sync via Pusher
+  useEffect(() => {
+    if (!workspaceId || !user) return;
+
+    const pusher = getPusherClient();
+    const channel: Channel = pusher.subscribe(`private-workspace-${workspaceId}`);
+
+    // Session created by another member
+    channel.bind("session-created", (data: { session: StudySession }) => {
+      // Refetch sessions to get the new one
+      fetchStudySessions(workspaceId);
+    });
+
+    // Session ended
+    channel.bind("session-ended", (data: { sessionId: string }) => {
+      // Refetch sessions to update status
+      fetchStudySessions(workspaceId);
+    });
+
+    // Member added
+    channel.bind("member-added", () => {
+      // Refetch workspace to get updated member list
+      fetchWorkspaceDetail(workspaceId);
+    });
+
+    // Member removed
+    channel.bind("member-removed", (data: { userId: string }) => {
+      if (data.userId === user.id) {
+        // Current user was removed - redirect
+        toast.info("Vous avez été retiré du workspace");
+        router.push("/dashboard/workspaces");
+      } else {
+        // Another member was removed - refetch
+        fetchWorkspaceDetail(workspaceId);
+      }
+    });
+
+    // Member role updated
+    channel.bind("member-role-updated", () => {
+      // Refetch workspace to get updated roles
+      fetchWorkspaceDetail(workspaceId);
+    });
+
+    // Workspace deleted
+    channel.bind("workspace-deleted", () => {
+      toast.info("Ce workspace a été supprimé");
+      router.push("/dashboard/workspaces");
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(`private-workspace-${workspaceId}`);
+    };
+  }, [workspaceId, user, router, fetchStudySessions, fetchWorkspaceDetail]);
 
   const handleCopyInviteCode = async () => {
     if (!workspace) return;

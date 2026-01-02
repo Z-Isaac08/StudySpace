@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getPusherServer } from "@/lib/pusher/server";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -97,6 +98,16 @@ export async function POST(request: NextRequest, { params }: Params) {
       },
     });
 
+    // Broadcast member-added event
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(`private-workspace-${workspaceId}`, "member-added", {
+        member: membership,
+      });
+    } catch (err) {
+      console.error("Failed to broadcast member-added:", err);
+    }
+
     return successResponse(membership, 201);
   } catch (error: any) {
     console.error("Add member error:", error);
@@ -161,6 +172,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         },
       },
     });
+
+    // Broadcast member-role-updated event
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(`private-workspace-${workspaceId}`, "member-role-updated", {
+        userId,
+        role,
+      });
+    } catch (err) {
+      console.error("Failed to broadcast member-role-updated:", err);
+    }
 
     return successResponse(membership);
   } catch (error: any) {

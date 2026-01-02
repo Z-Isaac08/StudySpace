@@ -94,9 +94,11 @@ export class PusherProvider {
     this.updateHandler = (update: Uint8Array, origin: unknown) => {
       // Don't broadcast updates that came from remote
       if (origin === "remote" || origin === "pusher" || origin === "resync") {
+        console.log("🔕 Skipping broadcast (origin:", origin, ")");
         return;
       }
 
+      console.log("📤 Broadcasting yjs-update from userId:", this.userId);
       // Broadcast to other clients
       this.broadcastEvent(this.channelName, "yjs-update", {
         update: toNumberArray(update),

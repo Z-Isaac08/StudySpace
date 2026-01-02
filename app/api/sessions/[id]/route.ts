@@ -117,6 +117,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
           select: {
             id: true,
             name: true,
+            tag: true,
           },
         },
         createdBy: {

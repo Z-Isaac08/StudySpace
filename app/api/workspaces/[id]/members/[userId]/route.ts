@@ -6,6 +6,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getPusherServer } from "@/lib/pusher/server";
 import { NextRequest } from "next/server";
 
 type Params = {
@@ -82,10 +83,20 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       },
     });
 
+    // Broadcast member-removed event
+    try {
+      const pusher = getPusherServer();
+      await pusher.trigger(`private-workspace-${workspaceId}`, "member-removed", {
+        userId: targetUserId,
+      });
+    } catch (err) {
+      console.error("Failed to broadcast member-removed:", err);
+    }
+
     return successResponse({
       message: isSelf
-        ? "Vous avez quitté le workspace avec succ�s"
-        : "Membre retiré avec succ�s",
+        ? "Vous avez quitté le workspace avec succès"
+        : "Membre retiré avec succès",
     });
   } catch (error: any) {
     console.error("Remove member error:", error);

@@ -1,0 +1,34 @@
+Analyse: Synchronisation temps réel dans le Workspace
+État actuel
+La page workspace (app/(dashboard)/dashboard/workspace/[id]/page.tsx) n'a aucune connexion Pusher. Toutes les données sont chargées une seule fois au montage via:
+fetchWorkspaceDetail(workspaceId)
+fetchStudySessions(workspaceId)
+Actions qui devraient être synchronisées en temps réel
+Action	Qui la fait	Qui devrait voir la mise à jour
+Créer une session	Membre A	Tous les autres membres voient "Session en cours"
+Terminer une session	Membre A	Tous les autres voient la session disparaître de "En cours"
+Ajouter un membre	Owner	Nouveau membre apparaît dans la liste
+Retirer un membre	Owner	Membre disparaît de la liste
+Modifier le rôle	Owner	Badge du membre se met à jour
+Supprimer le workspace	Owner	Tous les membres sont redirigés
+Solution proposée
+S'abonner à un channel Pusher pour le workspace: presence-workspace-{workspaceId}
+Broadcaster des événements depuis les actions:
+session-created → Refetch sessions ou ajouter au state
+session-ended → Mettre à jour la liste
+member-added → Refetch workspace ou ajouter au state
+member-removed → Retirer du state (+ rediriger si c'est l'utilisateur actuel)
+member-role-updated → Mettre à jour le rôle
+workspace-deleted → Rediriger tous les membres
+Modifier les API routes pour broadcaster après chaque action réussie
+Fichiers à modifier
+app/(dashboard)/dashboard/workspace/[id]/page.tsx - Ajouter listener Pusher
+app/api/sessions/route.ts (POST) - Broadcast session-created
+app/api/sessions/[id]/end/route.ts - Broadcast session-ended
+app/api/workspaces/[id]/members/route.ts - Broadcast member-added, member-removed, member-role-updated
+app/api/workspaces/[id]/route.ts (DELETE) - Broadcast workspace-deleted
+Complexité
+Moyenne - Pattern similaire à ce qui existe déjà dans la page session
+L'import getPusherClient est déjà présent dans la page workspace (ajouté précédemment)
+Le broadcastEvent existe déjà dans le store
+Tu veux que j'implémente ça ?

@@ -5,14 +5,13 @@
  * Orchestrates all collaborative editing functionality
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import type { Channel } from "pusher-js";
 import type {
   SyncStatus,
   CollaborationUser,
-  PresenceData,
   CollaborationProvider,
 } from "@/lib/types/collaboration";
 import { COLLABORATION_CONFIG } from "@/lib/types/collaboration";
@@ -21,10 +20,6 @@ import { setAwarenessUser } from "@/lib/yjs/awareness";
 import { toUint8Array, toNumberArray, getUserColor } from "@/lib/yjs/utils";
 import { PusherProvider } from "@/lib/yjs/pusher-provider";
 import { useConnectionStatus } from "./use-connection-status";
-import {
-  encodeAwarenessUpdate,
-  applyAwarenessUpdate,
-} from "y-protocols/awareness";
 
 interface UseCollaborativeEditorOptions {
   sessionId: string;
@@ -57,58 +52,84 @@ export function useCollaborativeEditor({
   fetchYjsState,
   saveYjsState,
 }: UseCollaborativeEditorOptions): UseCollaborativeEditorReturn {
-  // Core refs
+  // Core state - use state so changes trigger re-render for TipTap
+  const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
+  const [awareness, setAwareness] = useState<Awareness | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+
+  // Refs for cleanup and internal access
   const ydocRef = useRef<Y.Doc | null>(null);
   const awarenessRef = useRef<Awareness | null>(null);
   const providerRef = useRef<PusherProvider | null>(null);
   const saveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializedRef = useRef(false);
 
-  // State
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
-  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  // Store function refs to avoid dependency issues
+  const fetchYjsStateRef = useRef(fetchYjsState);
+  const saveYjsStateRef = useRef(saveYjsState);
+  const broadcastEventRef = useRef(broadcastEvent);
+
+  // Keep refs updated
+  useEffect(() => {
+    fetchYjsStateRef.current = fetchYjsState;
+  }, [fetchYjsState]);
+
+  useEffect(() => {
+    saveYjsStateRef.current = saveYjsState;
+  }, [saveYjsState]);
+
+  useEffect(() => {
+    broadcastEventRef.current = broadcastEvent;
+  }, [broadcastEvent]);
 
   // Connection status
   const { isOnline, setStatus, setLastSyncedAt: setConnectionLastSynced } =
     useConnectionStatus();
 
-  // Channel name
-  const channelName = `presence-session-${sessionId}`;
-
   // User color (deterministic)
-  const userColor = getUserColor(userId);
+  const userColor = useMemo(() => getUserColor(userId), [userId]);
 
-  // Create user object
-  const user: CollaborationUser = {
+  // Create user object (memoized)
+  const user: CollaborationUser = useMemo(() => ({
     id: userId,
     name: userName,
     color: userColor,
-  };
+  }), [userId, userName, userColor]);
 
-  // Initialize Yjs document and load state
+  // Initialize Yjs document and load state - only once per sessionId
   useEffect(() => {
+    // Prevent double initialization in React Strict Mode
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
     const init = async () => {
       // Create document
-      const { ydoc, awareness, content } = createYjsDocument({ sessionId });
+      const { ydoc: newYdoc, awareness: newAwareness } = createYjsDocument({ sessionId });
 
-      ydocRef.current = ydoc;
-      awarenessRef.current = awareness;
+      // Store in refs for cleanup
+      ydocRef.current = newYdoc;
+      awarenessRef.current = newAwareness;
 
       // Set user in awareness with deterministic color
-      setAwarenessUser(awareness, user, "online");
+      setAwarenessUser(newAwareness, user, "online");
 
       // Load initial state
       try {
-        const initialState = await fetchYjsState(sessionId);
+        const initialState = await fetchYjsStateRef.current(sessionId);
         if (initialState && initialState.length > 0) {
           const update = toUint8Array(initialState);
-          Y.applyUpdate(ydoc, update);
+          Y.applyUpdate(newYdoc, update);
           console.log("📥 Loaded Yjs state from database");
         }
       } catch (error) {
         console.error("Failed to load initial Yjs state:", error);
       }
 
+      // Update state to trigger re-render
+      setYdoc(newYdoc);
+      setAwareness(newAwareness);
       setIsLoaded(true);
     };
 
@@ -116,10 +137,12 @@ export function useCollaborativeEditor({
 
     // Cleanup
     return () => {
+      isInitializedRef.current = false;
+
       if (ydocRef.current && awarenessRef.current) {
         // Save state before destroying
         const state = Y.encodeStateAsUpdate(ydocRef.current);
-        saveYjsState(sessionId, toNumberArray(state)).catch(console.error);
+        saveYjsStateRef.current(sessionId, toNumberArray(state)).catch(console.error);
 
         destroyDocument({
           ydoc: ydocRef.current,
@@ -127,27 +150,28 @@ export function useCollaborativeEditor({
           content: ydocRef.current.getXmlFragment("default"),
         });
       }
+
+      setYdoc(null);
+      setAwareness(null);
+      setIsLoaded(false);
       ydocRef.current = null;
       awarenessRef.current = null;
     };
-  }, [sessionId]); // Only recreate on sessionId change
+  }, [sessionId, user]);
 
   // Setup Pusher sync
   useEffect(() => {
-    if (!pusherChannel || !ydocRef.current || !awarenessRef.current || !isLoaded) {
+    if (!pusherChannel || !ydoc || !awareness || !isLoaded) {
       return;
     }
 
-    const ydoc = ydocRef.current;
-    const awareness = awarenessRef.current;
-
-    // Create provider
+    // Create provider using ref for broadcastEvent
     const provider = new PusherProvider({
       sessionId,
       userId,
       ydoc,
       awareness,
-      broadcastEvent,
+      broadcastEvent: broadcastEventRef.current,
     });
 
     providerRef.current = provider;
@@ -171,6 +195,7 @@ export function useCollaborativeEditor({
       userId: string;
       _senderId?: string;
     }) => {
+      console.log("📨 Received yjs-update from:", data._senderId || data.userId, "| My userId:", userId);
       provider.handleRemoteUpdate(data);
     };
 
@@ -188,7 +213,7 @@ export function useCollaborativeEditor({
       setSyncStatus("synced");
 
       // Resync to get any missed updates
-      const remoteState = await fetchYjsState(sessionId);
+      const remoteState = await fetchYjsStateRef.current(sessionId);
       if (remoteState && remoteState.length > 0) {
         const update = toUint8Array(remoteState);
         Y.applyUpdate(ydoc, update, "resync");
@@ -206,6 +231,12 @@ export function useCollaborativeEditor({
     pusherChannel.bind("pusher:subscription_succeeded", handleSubscriptionSucceeded);
     pusherChannel.bind("pusher:subscription_error", handleSubscriptionError);
 
+    // Check if channel is already subscribed (event already fired before we bound)
+    if (pusherChannel.subscribed) {
+      console.log("✅ Channel already subscribed, triggering sync");
+      handleSubscriptionSucceeded();
+    }
+
     // Cleanup
     return () => {
       pusherChannel.unbind("yjs-update", handleYjsUpdate);
@@ -221,21 +252,21 @@ export function useCollaborativeEditor({
     isLoaded,
     sessionId,
     userId,
-    broadcastEvent,
-    fetchYjsState,
+    ydoc,
+    awareness,
     setStatus,
     setConnectionLastSynced,
   ]);
 
   // Auto-save periodically
   useEffect(() => {
-    if (!ydocRef.current || !isLoaded) return;
+    if (!ydoc || !isLoaded) return;
 
     const save = async () => {
       if (ydocRef.current) {
         try {
           const state = Y.encodeStateAsUpdate(ydocRef.current);
-          await saveYjsState(sessionId, toNumberArray(state));
+          await saveYjsStateRef.current(sessionId, toNumberArray(state));
           console.log("💾 Auto-saved Yjs state");
         } catch (error) {
           console.error("Failed to auto-save:", error);
@@ -255,7 +286,7 @@ export function useCollaborativeEditor({
       // Save on cleanup
       save();
     };
-  }, [sessionId, isLoaded, saveYjsState]);
+  }, [sessionId, isLoaded, ydoc]);
 
   // Handle online/offline
   useEffect(() => {
@@ -263,36 +294,37 @@ export function useCollaborativeEditor({
       setSyncStatus("offline");
     } else if (syncStatus === "offline" && providerRef.current) {
       setSyncStatus("syncing");
-      providerRef.current.forceResync(() => fetchYjsState(sessionId));
+      providerRef.current.forceResync(() => fetchYjsStateRef.current(sessionId));
     }
-  }, [isOnline, syncStatus, fetchYjsState, sessionId]);
+  }, [isOnline, syncStatus, sessionId]);
 
-  // Force resync
+  // Force resync - stable callback
   const forceResync = useCallback(async () => {
     if (providerRef.current) {
-      await providerRef.current.forceResync(() => fetchYjsState(sessionId));
+      await providerRef.current.forceResync(() => fetchYjsStateRef.current(sessionId));
     }
-  }, [fetchYjsState, sessionId]);
+  }, [sessionId]);
 
-  // Manual save
+  // Manual save - stable callback
   const saveState = useCallback(async () => {
     if (ydocRef.current) {
       const state = Y.encodeStateAsUpdate(ydocRef.current);
-      await saveYjsState(sessionId, toNumberArray(state));
+      await saveYjsStateRef.current(sessionId, toNumberArray(state));
     }
-  }, [sessionId, saveYjsState]);
+  }, [sessionId]);
 
-  // Provider object for TipTap
-  const provider: CollaborationProvider | null = awarenessRef.current
-    ? {
-        awareness: awarenessRef.current,
-        destroy: () => providerRef.current?.destroy(),
-      }
-    : null;
+  // Provider object for TipTap - memoized
+  const provider: CollaborationProvider | null = useMemo(() => {
+    if (!awareness) return null;
+    return {
+      awareness,
+      destroy: () => providerRef.current?.destroy(),
+    };
+  }, [awareness]);
 
   return {
-    ydoc: ydocRef.current,
-    awareness: awarenessRef.current,
+    ydoc,
+    awareness,
     provider,
     isLoaded,
     syncStatus,

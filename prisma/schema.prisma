@@ -151,13 +151,31 @@ model StudySession {
   editorState Json? // État de l'éditeur (TipTap/Yjs)
   createdAt   DateTime  @default(now())
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  notes     SessionNote[]
 
   @@index([workspaceId])
   @@index([createdById])
   @@index([startedAt])
   @@map("study_sessions")
+}
+
+// Notes privées par utilisateur par session
+model SessionNote {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String
+  content   String   @default("") // Markdown privé
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId]) // Un user = une note par session
+  @@index([sessionId])
+  @@index([userId])
+  @@map("session_notes")
 }
 
 // ────────────────────────────────────────────────────────────
