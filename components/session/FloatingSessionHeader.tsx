@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { SessionMember } from "@/lib/hooks/use-session-presence";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -16,16 +17,17 @@ import {
   NotebookPen,
   Save,
   Square,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
+import { SessionPresenceAvatars } from "./SessionPresenceAvatars";
 
 interface FloatingSessionHeaderProps {
   workspaceId: string;
   workspaceName: string;
   workspaceTag?: string;
   duration: string;
-  memberCount: number;
+  members: SessionMember[];
+  currentUserId: string;
   isEnded: boolean;
   isSaving: boolean;
   isEnding: boolean;
@@ -67,7 +69,8 @@ export function FloatingSessionHeader({
   workspaceName,
   workspaceTag,
   duration,
-  memberCount,
+  members,
+  currentUserId,
   isEnded,
   isSaving,
   isEnding,
@@ -129,19 +132,14 @@ export function FloatingSessionHeader({
           {/* Divider */}
           <div className="mx-1 h-5 w-px bg-border" />
 
-          {/* Member count */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 px-2 text-sm text-muted-foreground">
-                <Users className="h-3.5 w-3.5" />
-                <span>{memberCount}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {memberCount} membre{memberCount > 1 ? "s" : ""} connecté
-              {memberCount > 1 ? "s" : ""}
-            </TooltipContent>
-          </Tooltip>
+          {/* Session members */}
+          <div className="px-1">
+            <SessionPresenceAvatars
+              members={members}
+              currentUserId={currentUserId}
+              maxVisible={4}
+            />
+          </div>
 
           {/* Divider */}
           <div className="mx-1 h-5 w-px bg-border" />

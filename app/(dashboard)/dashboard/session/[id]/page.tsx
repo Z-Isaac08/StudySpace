@@ -1,9 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 
 import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
 import { FloatingSessionHeader } from "@/components/session/FloatingSessionHeader";
+import { ConnectionStatusBanner } from "@/components/session/ConnectionStatusBanner";
 import { PrivateNotesEditor } from "@/components/session/PrivateNotesEditor";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,12 +16,30 @@ import {
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
+import { useConnectionOrchestrator, type SystemStatus } from "@/lib/hooks/use-connection-orchestrator";
+import { useSessionPresence } from "@/lib/hooks/use-session-presence";
 import { getPusherClient } from "@/lib/pusher/client";
 import { cn } from "@/lib/utils";
 import { Loader2, NotebookPen, Paintbrush, Type, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import type { Channel } from "pusher-js";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+// Dynamic import for TldrawCanvas to avoid SSR issues
+const TldrawCanvas = dynamic(
+  () => import("@/components/canvas/TldrawCanvas").then((mod) => mod.TldrawCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-white dark:bg-neutral-950">
+        <div className="text-center text-muted-foreground">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <p className="mt-2 text-sm">Chargement du canvas...</p>
+        </div>
+      </div>
+    ),
+  }
+);
 
 // Tag colors for panel accents
 const tagPanelColors: Record<string, { border: string; header: string; icon: string }> = {
@@ -86,21 +106,65 @@ export default function SessionPage() {
     endStudySession,
     clearCurrentStudySession,
     saveYjsState,
+    fetchYjsState,
     broadcastEvent,
   } = useStudySession();
 
   const { confirm, ConfirmationDialog } = useConfirm();
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [editorContent, setEditorContent] = useState("");
-  const [canvasDrawing, setCanvasDrawing] = useState(false);
   const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
-  const [memberCount, setMemberCount] = useState(0);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const ydocRef = useRef<any>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
-  // Auto-save interval ref
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Connection orchestrator for coordinating Pusher and Tldraw connections
+  const {
+    globalStatus,
+    partialReason,
+    browserOnline,
+    setPusherStatus,
+    setTldrawStatus,
+    isEditorEnabled,
+    isCanvasEnabled,
+    retryAll,
+  } = useConnectionOrchestrator({ enableTldraw: true });
+
+  // Session presence - unified view of all members
+  const {
+    members,
+    setMyLocation,
+    isConnected: isPresenceConnected,
+  } = useSessionPresence({
+    pusherChannel,
+    currentUserId: user?.id || "",
+  });
+
+  // Handle Tldraw connection status changes
+  const handleTldrawConnectionChange = useCallback(
+    (status: SystemStatus) => {
+      setTldrawStatus(status);
+    },
+    [setTldrawStatus]
+  );
+
+  // Handle retry all connections
+  const handleRetryAll = useCallback(async () => {
+    setIsRetrying(true);
+    try {
+      await retryAll();
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [retryAll]);
+
+  // Location callbacks - update presence when user focuses editor or canvas
+  const handleEditorFocus = useCallback(() => {
+    setMyLocation("editor");
+  }, [setMyLocation]);
+
+  const handleCanvasFocus = useCallback(() => {
+    setMyLocation("canvas");
+  }, [setMyLocation]);
 
   // Load session on mount
   useEffect(() => {
@@ -108,9 +172,6 @@ export default function SessionPage() {
 
     return () => {
       clearCurrentStudySession();
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
     };
   }, [sessionId, fetchStudySession, clearCurrentStudySession]);
 
@@ -123,24 +184,10 @@ export default function SessionPage() {
     const channelName = `presence-session-${sessionId}`;
     const channel = pusher.subscribe(channelName);
 
-    channel.bind("pusher:subscription_succeeded", (members: any) => {
+    channel.bind("pusher:subscription_succeeded", () => {
       console.log("✅ Session connected to Pusher");
-      setMemberCount(members.count);
       setPusherChannel(channel);
-    });
-
-    channel.bind("pusher:member_added", () => {
-      setMemberCount((prev) => prev + 1);
-    });
-
-    channel.bind("pusher:member_removed", () => {
-      // Use functional update to get the latest memberCount
-      setMemberCount((prev) => {
-        const newCount = prev - 1;
-        // Note: Auto-terminate logic removed - session stays active
-        // until explicitly terminated by a member
-        return newCount;
-      });
+      setPusherStatus("connected");
     });
 
     // Listen for session terminated event (server event, no "client-" prefix)
@@ -151,6 +198,7 @@ export default function SessionPage() {
 
     channel.bind("pusher:subscription_error", () => {
       console.error("❌ Failed to connect session to Pusher");
+      setPusherStatus("error");
     });
 
     // Cleanup
@@ -158,9 +206,9 @@ export default function SessionPage() {
       pusher.unsubscribe(channelName);
       setPusherChannel(null);
     };
-  }, [sessionId, user, currentStudySession]);
+  }, [sessionId, user, currentStudySession, router, setPusherStatus]);
 
-  // Initialize canvas and editor from saved state
+  // Initialize editor from saved state
   useEffect(() => {
     if (!currentStudySession) return;
 
@@ -168,116 +216,14 @@ export default function SessionPage() {
     if (currentStudySession.editorState?.content) {
       setEditorContent(currentStudySession.editorState.content);
     }
-
-    // Restore canvas state
-    if (currentStudySession.canvasState?.dataURL && canvasRef.current) {
-      const ctx = canvasRef.current.getContext("2d");
-      if (ctx) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = currentStudySession.canvasState.dataURL;
-      }
-    }
-
-    // Setup canvas drawing
-    if (canvasRef.current && !currentStudySession.endedAt) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      // Set canvas size to match container
-      const resizeCanvas = () => {
-        const container = canvas.parentElement;
-        if (container) {
-          canvas.width = container.clientWidth;
-          canvas.height = container.clientHeight;
-        }
-      };
-
-      resizeCanvas();
-      window.addEventListener("resize", resizeCanvas);
-
-      let isDrawing = false;
-      let lastX = 0;
-      let lastY = 0;
-
-      const startDrawing = (e: MouseEvent) => {
-        isDrawing = true;
-        [lastX, lastY] = [e.offsetX, e.offsetY];
-      };
-
-      const draw = (e: MouseEvent) => {
-        if (!isDrawing) return;
-
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.stroke();
-
-        [lastX, lastY] = [e.offsetX, e.offsetY];
-      };
-
-      const stopDrawing = () => {
-        isDrawing = false;
-      };
-
-      canvas.addEventListener("mousedown", startDrawing);
-      canvas.addEventListener("mousemove", draw);
-      canvas.addEventListener("mouseup", stopDrawing);
-      canvas.addEventListener("mouseout", stopDrawing);
-
-      return () => {
-        window.removeEventListener("resize", resizeCanvas);
-        canvas.removeEventListener("mousedown", startDrawing);
-        canvas.removeEventListener("mousemove", draw);
-        canvas.removeEventListener("mouseup", stopDrawing);
-        canvas.removeEventListener("mouseout", stopDrawing);
-      };
-    }
+    // Note: Canvas state is now handled by tldraw sync - no need to restore manually
   }, [currentStudySession]);
 
-  // Auto-save canvas every 60 seconds (editor auto-saves separately via CollaborativeEditor)
-  useEffect(() => {
-    if (!currentStudySession || currentStudySession.endedAt) return;
-
-    const saveSession = async () => {
-      const canvasDataURL = canvasRef.current?.toDataURL();
-
-      await updateStudySession(sessionId, {
-        canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
-      });
-    };
-
-    // Initial save after 10 seconds
-    const initialTimeout = setTimeout(saveSession, 10000);
-
-    // Then auto-save every 60 seconds
-    autoSaveIntervalRef.current = setInterval(saveSession, 60000);
-
-    return () => {
-      clearTimeout(initialTimeout);
-      if (autoSaveIntervalRef.current) {
-        clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, [currentStudySession, sessionId, updateStudySession]);
-
-  // Manual save (canvas only - editor auto-saves via CollaborativeEditor)
+  // Manual save - editor handles its own Yjs state, tldraw handles its own persistence
   const handleManualSave = async () => {
     if (!currentStudySession) return;
-
-    const canvasDataURL = canvasRef.current?.toDataURL();
-
-    await updateStudySession(sessionId, {
-      canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
-    });
-
-    toast.success("Canvas sauvegardé");
+    // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
+    toast.success("Session sauvegardée");
   };
 
   // Quit session (leave without terminating for others)
@@ -285,7 +231,7 @@ export default function SessionPage() {
     if (!currentStudySession) return;
 
     // Check if you're the last member - if so, should terminate instead
-    if (memberCount <= 1) {
+    if (members.length <= 1) {
       const confirmed = await confirm({
         title: "Dernière personne dans la session",
         description:
@@ -312,15 +258,7 @@ export default function SessionPage() {
     if (!confirmed) return;
 
     try {
-      // Save current state before quitting
-      const canvasDataURL = canvasRef.current?.toDataURL();
-
-      if (ydocRef.current) {
-        const Y = await import("yjs");
-        const state = Y.encodeStateAsUpdate(ydocRef.current);
-        await saveYjsState(sessionId, Array.from(state));
-      }
-
+      // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
       // Don't end session, just navigate away
       toast.info("Vous avez quitté la session");
       router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
@@ -348,19 +286,10 @@ export default function SessionPage() {
     }
 
     try {
-      // Final save: Canvas + Editor + Yjs state
-      const canvasDataURL = canvasRef.current?.toDataURL();
-
-      // Save Yjs state if available
-      if (ydocRef.current) {
-        const Y = await import("yjs");
-        const state = Y.encodeStateAsUpdate(ydocRef.current);
-        await saveYjsState(sessionId, Array.from(state));
-      }
+      // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
 
       // End session with final state
       await endStudySession(sessionId, {
-        canvasState: canvasDataURL ? { dataURL: canvasDataURL } : undefined,
         editorState: { content: editorContent },
       });
 
@@ -382,15 +311,6 @@ export default function SessionPage() {
     } catch (error) {
       console.error("Failed to terminate session:", error);
       toast.error("Erreur lors de la terminaison de la session");
-    }
-  };
-
-  // Clear canvas
-  const handleClearCanvas = () => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    if (ctx) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
   };
 
@@ -431,13 +351,23 @@ export default function SessionPage() {
     <>
       <ConfirmationDialog />
       <div className="relative flex h-screen flex-col overflow-hidden">
+        {/* Connection Status Banner */}
+        <ConnectionStatusBanner
+          globalStatus={globalStatus}
+          partialReason={partialReason}
+          browserOnline={browserOnline}
+          onRetry={handleRetryAll}
+          isRetrying={isRetrying}
+        />
+
         {/* Floating Header */}
         <FloatingSessionHeader
           workspaceId={currentStudySession.workspaceId}
           workspaceName={currentStudySession.workspace?.name || "Session"}
           workspaceTag={currentStudySession.workspace?.tag}
           duration={getDuration()}
-          memberCount={memberCount}
+          members={members}
+          currentUserId={user?.id || ""}
           isEnded={isEnded}
           isSaving={isSaving}
           isEnding={isEnding}
@@ -458,8 +388,9 @@ export default function SessionPage() {
             {/* Canvas Panel - 60% */}
             <ResizablePanel defaultSize={60} minSize={30}>
               <div className={cn(
-                "relative h-full rounded-lg border-2 bg-card p-1",
-                panelColors.border
+                "relative h-full rounded-lg border-2 bg-card overflow-hidden",
+                panelColors.border,
+                !isCanvasEnabled && "opacity-50"
               )}>
                 {/* Canvas Header */}
                 <div className={cn(
@@ -468,26 +399,24 @@ export default function SessionPage() {
                 )}>
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <Paintbrush className={cn("h-4 w-4", panelColors.icon)} />
-                    <span className="text-muted-foreground">Canvas</span>
+                    <span className="text-muted-foreground">Canvas collaboratif</span>
                   </div>
-                  {!isEnded && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClearCanvas}
-                      className="h-7 text-xs"
-                    >
-                      Effacer
-                    </Button>
-                  )}
+                  {/* Tldraw has its own toolbar, no need for custom buttons */}
                 </div>
-                {/* Canvas Area */}
+                {/* Canvas Area - TldrawCanvas */}
                 <div className="relative h-[calc(100%-2.5rem)]">
-                  <canvas
-                    ref={canvasRef}
-                    className="h-full w-full cursor-crosshair bg-white"
-                    style={{ touchAction: "none" }}
-                  />
+                  {user && (
+                    <TldrawCanvas
+                      sessionId={sessionId}
+                      userId={user.id}
+                      userName={user.name}
+                      onConnectionStatusChange={handleTldrawConnectionChange}
+                      onFocus={handleCanvasFocus}
+                      isEnded={isEnded}
+                      isEnabled={isCanvasEnabled}
+                      panelColors={panelColors}
+                    />
+                  )}
                 </div>
               </div>
             </ResizablePanel>
@@ -498,7 +427,8 @@ export default function SessionPage() {
             <ResizablePanel defaultSize={40} minSize={25}>
               <div className={cn(
                 "relative h-full rounded-lg border-2 bg-card p-1",
-                panelColors.border
+                panelColors.border,
+                !isEditorEnabled && "opacity-50 pointer-events-none"
               )}>
                 {/* Editor Header */}
                 <div className={cn(
@@ -517,6 +447,7 @@ export default function SessionPage() {
                       userName={user.name}
                       initialContent={editorContent}
                       pusherChannel={pusherChannel}
+                      onFocus={handleEditorFocus}
                       onSave={async (content) => {
                         setEditorContent(content);
                         await updateStudySession(sessionId, {

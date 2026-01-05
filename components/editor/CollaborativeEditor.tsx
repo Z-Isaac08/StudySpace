@@ -25,17 +25,15 @@ import {
   Quote,
 } from "lucide-react";
 import type { Channel } from "pusher-js";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EditorSkeleton } from "./EditorSkeleton";
 import { EditorStatusBar } from "./EditorStatusBar";
 import { OfflineBanner } from "./OfflineBanner";
-import { PresenceAvatars } from "./PresenceAvatars";
 
 import { useCollaborativeEditor } from "@/lib/hooks/use-collaborative-editor";
 import { useStudySession } from "@/lib/hooks/use-study-session";
-import type { PresenceData } from "@/lib/types/collaboration";
 import { getUserColor } from "@/lib/yjs/utils";
 
 interface CollaborativeEditorProps {
@@ -45,6 +43,8 @@ interface CollaborativeEditorProps {
   initialContent?: string;
   onSave?: (content: string) => void;
   pusherChannel: Channel | null;
+  /** Callback when user focuses the editor */
+  onFocus?: () => void;
 }
 
 export function CollaborativeEditor({
@@ -54,11 +54,9 @@ export function CollaborativeEditor({
   initialContent = "",
   onSave,
   pusherChannel,
+  onFocus,
 }: CollaborativeEditorProps) {
   const { fetchYjsState, saveYjsState, broadcastEvent } = useStudySession();
-  const [presenceUsers, setPresenceUsers] = useState<Map<number, PresenceData>>(
-    new Map()
-  );
 
   // Deterministic color for user
   const userColor = getUserColor(userId);
@@ -122,22 +120,20 @@ export function CollaborativeEditor({
     [ydoc, provider] // Recreate editor when ydoc or provider changes
   );
 
-  // Track presence/awareness
+  // Notify parent when editor is focused
   useEffect(() => {
-    if (!awareness) return;
+    if (!editor || !onFocus) return;
 
-    const updateUsers = () => {
-      const states = awareness.getStates() as Map<number, PresenceData>;
-      setPresenceUsers(new Map(states));
+    const handleFocus = () => {
+      onFocus();
     };
 
-    awareness.on("change", updateUsers);
-    updateUsers();
+    editor.on("focus", handleFocus);
 
     return () => {
-      awareness.off("change", updateUsers);
+      editor.off("focus", handleFocus);
     };
-  }, [awareness]);
+  }, [editor, onFocus]);
 
   // Seed with initial content if document is empty
   useEffect(() => {
@@ -267,19 +263,12 @@ export function CollaborativeEditor({
 
           </div>
 
-          {/* Status and presence */}
-          <div className="flex items-center gap-3">
-            <PresenceAvatars
-              users={presenceUsers}
-              currentUserId={userId}
-              maxVisible={4}
-            />
-            <EditorStatusBar
-              syncStatus={syncStatus}
-              lastSyncedAt={lastSyncedAt}
-              onRetry={forceResync}
-            />
-          </div>
+          {/* Status */}
+          <EditorStatusBar
+            syncStatus={syncStatus}
+            lastSyncedAt={lastSyncedAt}
+            onRetry={forceResync}
+          />
         </div>
 
         {/* Editor Content */}
