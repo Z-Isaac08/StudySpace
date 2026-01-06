@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 
+import { WorkspaceFiles } from "@/components/workspace/WorkspaceFiles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -815,21 +816,12 @@ export default function WorkspaceDetailPage() {
 
         {/* Files tab */}
         <TabsContent value="files" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                Fichiers ({workspace!._count.files})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="py-8 text-center">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <p className="mt-4 text-muted-foreground">
-                  Le système de fichiers sera bientôt disponible.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <WorkspaceFiles
+            workspaceId={workspaceId}
+            fileCount={workspace!._count.files}
+            isOwner={isOwner}
+            currentUserId={user?.id || ""}
+          />
         </TabsContent>
       </Tabs>
 

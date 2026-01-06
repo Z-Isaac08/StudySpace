@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   Clock,
+  FolderOpen,
   Loader2,
   LogOut,
   NotebookPen,
@@ -32,10 +33,12 @@ interface FloatingSessionHeaderProps {
   isSaving: boolean;
   isEnding: boolean;
   isNotesOpen: boolean;
+  isFilesOpen: boolean;
   onSave: () => void;
   onQuit: () => void;
   onTerminate: () => void;
   onToggleNotes: () => void;
+  onToggleFiles: () => void;
 }
 
 // Tag accent colors for the header border
@@ -75,10 +78,12 @@ export function FloatingSessionHeader({
   isSaving,
   isEnding,
   isNotesOpen,
+  isFilesOpen,
   onSave,
   onQuit,
   onTerminate,
   onToggleNotes,
+  onToggleFiles,
 }: FloatingSessionHeaderProps) {
   const accentColor = workspaceTag ? tagAccentColors[workspaceTag] : "";
   const dotColor = workspaceTag ? tagDotColors[workspaceTag] : "";
@@ -143,6 +148,26 @@ export function FloatingSessionHeader({
 
           {/* Divider */}
           <div className="mx-1 h-5 w-px bg-border" />
+
+          {/* Files button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 rounded-full",
+                  isFilesOpen && "bg-accent text-accent-foreground"
+                )}
+                onClick={onToggleFiles}
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isFilesOpen ? "Fermer les fichiers" : "Fichiers du workspace"}
+            </TooltipContent>
+          </Tooltip>
 
           {/* Notes button */}
           <Tooltip>

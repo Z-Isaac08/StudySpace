@@ -7,6 +7,7 @@ import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
 import { FloatingSessionHeader } from "@/components/session/FloatingSessionHeader";
 import { ConnectionStatusBanner } from "@/components/session/ConnectionStatusBanner";
 import { PrivateNotesEditor } from "@/components/session/PrivateNotesEditor";
+import { SessionFilesPanel } from "@/components/session/SessionFilesPanel";
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -115,6 +116,7 @@ export default function SessionPage() {
   const [editorContent, setEditorContent] = useState("");
   const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isFilesOpen, setIsFilesOpen] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Connection orchestrator for coordinating Pusher and Tldraw connections
@@ -372,10 +374,12 @@ export default function SessionPage() {
           isSaving={isSaving}
           isEnding={isEnding}
           isNotesOpen={isNotesOpen}
+          isFilesOpen={isFilesOpen}
           onSave={handleManualSave}
           onQuit={handleQuitSession}
           onTerminate={() => handleTerminateSession(false)}
           onToggleNotes={() => setIsNotesOpen((prev) => !prev)}
+          onToggleFiles={() => setIsFilesOpen((prev) => !prev)}
         />
 
         {/* Main content - Split-screen layout */}
@@ -495,6 +499,13 @@ export default function SessionPage() {
               )}
             </div>
           </div>
+
+          {/* Files Panel */}
+          <SessionFilesPanel
+            workspaceId={currentStudySession.workspaceId}
+            isOpen={isFilesOpen}
+            onClose={() => setIsFilesOpen(false)}
+          />
         </div>
       </div>
     </>

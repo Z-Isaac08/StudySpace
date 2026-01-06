@@ -50,6 +50,7 @@
     "@tiptap/starter-kit": "^3.14.0",
     "@tiptap/y-tiptap": "^3.0.1",
     "@tldraw/sync": "^4.2.1",
+    "@vercel/blob": "^2.0.0",
     "axios": "^1.13.2",
     "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",
