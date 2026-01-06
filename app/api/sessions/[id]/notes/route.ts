@@ -1,12 +1,13 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
+    errorResponse,
+    forbiddenResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getErrorMessage } from "@/lib/types";
 import { NextRequest } from "next/server";
 
 type Params = {
@@ -67,9 +68,9 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     return successResponse(note);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Get session notes error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -126,8 +127,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     });
 
     return successResponse(note);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update session notes error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

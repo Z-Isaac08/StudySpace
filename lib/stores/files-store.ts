@@ -2,6 +2,7 @@
  * Files Store - Zustand store for workspace files
  */
 
+import { getErrorMessage } from "@/lib/types";
 import { upload } from "@vercel/blob/client";
 import axios from "axios";
 import { create } from "zustand";
@@ -44,9 +45,9 @@ export const useFilesStore = create<FilesState & FilesActions>((set, get) => ({
     try {
       const { data } = await axios.get(`/api/files?workspaceId=${workspaceId}`);
       set({ files: data.files, isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error: error.response?.data?.error || "Failed to fetch files",
+        error: getErrorMessage(error),
         isLoading: false,
       });
     }
@@ -62,8 +63,8 @@ export const useFilesStore = create<FilesState & FilesActions>((set, get) => ({
       });
       // Refresh files list to get the new file with DB info
       await get().fetchFiles(workspaceId);
-    } catch (error: any) {
-      set({ error: error.message || "Failed to upload file" });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error) });
       throw error;
     } finally {
       set({ isUploading: false });
@@ -76,8 +77,8 @@ export const useFilesStore = create<FilesState & FilesActions>((set, get) => ({
       set((state) => ({
         files: state.files.filter((f) => f.id !== fileId),
       }));
-    } catch (error: any) {
-      set({ error: error.response?.data?.error || "Failed to delete file" });
+    } catch (error: unknown) {
+      set({ error: getErrorMessage(error) });
       throw error;
     }
   },

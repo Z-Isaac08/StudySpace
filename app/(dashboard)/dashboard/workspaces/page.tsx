@@ -5,28 +5,36 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { WorkspaceCard } from "@/components/workspace/WorkspaceCard";
 import { useWorkspaces } from "@/lib/hooks/use-workspace";
+import { getErrorMessage } from "@/lib/types";
 import { FolderKanban, Plus, Search, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+interface FetchWorkspacesParams {
+  page: number;
+  limit: number;
+  tag?: string;
+  search?: string;
+}
 
 const tagOptions = [
   { value: "all", label: "Toutes les matières" },
@@ -64,7 +72,7 @@ export default function WorkspacesPage() {
 
   // Fetch workspaces with server-side filtering and pagination
   useEffect(() => {
-    const params: any = { page, limit: 20 };
+    const params: FetchWorkspacesParams = { page, limit: 20 };
 
     if (tagFilter !== "all") {
       params.tag = tagFilter;
@@ -129,8 +137,8 @@ export default function WorkspacesPage() {
       await joinWorkspace(joinCode);
       setJoinCode("");
       setJoinDialogOpen(false);
-    } catch (error: any) {
-      setJoinError(error.message || "Impossible de rejoindre le workspace");
+    } catch (error: unknown) {
+      setJoinError(getErrorMessage(error));
     } finally {
       setIsJoining(false);
     }

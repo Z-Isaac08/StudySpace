@@ -1,14 +1,15 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    forbiddenResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
 import { getPusherServer } from "@/lib/pusher/server";
+import { getErrorMessage } from "@/lib/types";
 import { UpdateWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -101,9 +102,9 @@ export async function GET(request: NextRequest, { params }: Params) {
       userRole: userMembership.role,
       _count,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Get workspace error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -142,9 +143,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
     });
 
     return successResponse(workspace);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update workspace error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -183,8 +184,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     });
 
     return successResponse({ message: "Workspace supprimé avec succès" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Delete workspace error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

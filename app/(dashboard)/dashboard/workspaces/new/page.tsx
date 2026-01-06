@@ -2,44 +2,45 @@
 
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
+import { getErrorMessage } from "@/lib/types";
 import { CreateWorkspaceInput, CreateWorkspaceSchema } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowLeft,
-  Atom,
-  Calculator,
-  Code2,
-  FlaskRound as Flask,
-  FolderKanban,
-  Languages,
-  Leaf,
-  Loader2,
-  Scale,
+    ArrowLeft,
+    Atom,
+    Calculator,
+    Code2,
+    FlaskRound as Flask,
+    FolderKanban,
+    Languages,
+    Leaf,
+    Loader2,
+    Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -78,8 +79,8 @@ export default function NewWorkspacePage() {
       const response = await axios.post("/api/workspaces", data);
       const workspace = response.data.data;
       router.push(`/dashboard/workspace/${workspace.id}`);
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Impossible de créer le workspace");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

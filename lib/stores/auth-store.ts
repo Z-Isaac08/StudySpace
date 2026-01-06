@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
               });
               await get().refreshSession();
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             set({ isLoading: false });
             throw new Error(getAuthErrorMessage(error));
           } finally {
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthState>()(
             if (result.error) {
               throw new Error(getAuthErrorMessage(result.error));
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             set({ isLoading: false });
             throw new Error(getAuthErrorMessage(error));
           } finally {

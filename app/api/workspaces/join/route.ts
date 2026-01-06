@@ -1,12 +1,13 @@
 import {
-  errorResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getErrorMessage } from "@/lib/types";
 import { InviteToWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -75,8 +76,8 @@ export async function POST(request: NextRequest) {
       },
       201
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Join workspace error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

@@ -7,14 +7,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import {
-  AlertCircle,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  Mail,
+    AlertCircle,
+    CheckCircle2,
+    Eye,
+    EyeOff,
+    Loader2,
+    Lock,
+    Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -66,8 +67,8 @@ function LoginForm() {
       } else {
         router.push("/dashboard");
       }
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la connexion");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   };
 

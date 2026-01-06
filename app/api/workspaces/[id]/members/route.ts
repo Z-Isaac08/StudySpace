@@ -1,14 +1,15 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    forbiddenResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
 import { getPusherServer } from "@/lib/pusher/server";
+import { getErrorMessage } from "@/lib/types";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -109,9 +110,9 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     return successResponse(membership, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Add member error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -185,8 +186,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
 
     return successResponse(membership);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update member role error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

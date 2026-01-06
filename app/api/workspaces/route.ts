@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import {
   errorResponse,
   successResponse,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getErrorMessage } from "@/lib/types";
 import { CreateWorkspaceSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -39,8 +41,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {
+    // Build where clause with proper Prisma type
+    const where: Prisma.WorkspaceWhereInput = {
       members: {
         some: {
           userId: user.id,
@@ -50,19 +52,19 @@ export async function GET(request: NextRequest) {
 
     // Add tag filter
     if (tag) {
-      where.tag = tag;
+      where.tag = tag as Prisma.EnumWorkspaceTagFilter;
     }
 
     // Add search filter
     if (search) {
       where.name = {
         contains: search,
-        mode: "insensitive", // Case-insensitive search
+        mode: "insensitive",
       };
     }
 
-    // Build orderBy clause
-    const orderBy: any = {};
+    // Build orderBy clause with proper Prisma type
+    const orderBy: Prisma.WorkspaceOrderByWithRelationInput = {};
     if (sortBy === "name" || sortBy === "createdAt" || sortBy === "updatedAt") {
       orderBy[sortBy] = sortOrder;
     } else {
@@ -118,9 +120,9 @@ export async function GET(request: NextRequest) {
         hasPreviousPage,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[WORKSPACES_GET]", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -177,8 +179,8 @@ export async function POST(request: NextRequest) {
     });
 
     return successResponse(workspace, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create workspace error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

@@ -1,6 +1,7 @@
 /**
  * Pusher Client Configuration - StudySpace
  */
+import { getErrorMessage } from "@/lib/types";
 import Pusher from "pusher-js";
 
 // Empêcher l'exécution côté serveur (SSR)
@@ -47,12 +48,12 @@ export function getPusherClient(): Pusher {
         }
       );
 
-      pusherInstance.connection.bind("error", (err: any) => {
+      pusherInstance.connection.bind("error", (err: unknown) => {
         console.error("[Pusher] Connection Error:", {
           error: err,
-          type: err?.type,
-          data: err?.data,
-          message: err?.error?.message || err?.message,
+          type: (err as any)?.type,
+          data: (err as any)?.data,
+          message: getErrorMessage(err),
         });
       });
     }

@@ -4,35 +4,36 @@ import { MotionDiv } from "@/components/motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import { UpdateProfileSchema, type UpdateProfileInput } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  BadgeCheck,
-  BadgeX,
-  CalendarDays,
-  Edit,
-  FileText,
-  FolderKanban,
-  Loader2,
-  Mail,
-  Timer,
-  User,
+    BadgeCheck,
+    BadgeX,
+    CalendarDays,
+    Edit,
+    FileText,
+    FolderKanban,
+    Loader2,
+    Mail,
+    Timer,
+    User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -80,8 +81,8 @@ export default function ProfilPage() {
       await updateProfile(data);
       toast.success("Profil mis à jour avec succès");
       setIsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la mise à jour du profil");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Erreur lors de la mise à jour du profil");
     }
   };
 

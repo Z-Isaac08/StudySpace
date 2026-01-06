@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import axios from "axios";
 import { CheckCircle, FolderKanban, Loader2, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -71,11 +72,11 @@ export default function InvitePage() {
         setTimeout(() => {
           router.push(`/dashboard/workspace/${data.data.workspace.id}`);
         }, 2000);
-      } catch (error: any) {
-        const errorMsg = error.response?.data?.error || "Erreur inconnue";
+      } catch (error: unknown) {
+        const errorMsg = getErrorMessage(error);
 
         // Check if already member
-        if (errorMsg.includes("d�j� membre")) {
+        if (errorMsg.includes("déjà membre") || errorMsg.includes("already member")) {
           setStatus("already_member");
           // Try to extract workspace info from error or fetch it
           // For now, redirect to workspaces list

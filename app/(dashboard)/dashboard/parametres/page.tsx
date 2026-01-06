@@ -6,50 +6,51 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import {
-  ChangePasswordSchema,
-  type ChangePasswordInput,
-  type UpdateProfileInput,
-  UpdateProfileSchema,
+    ChangePasswordSchema,
+    UpdateProfileSchema,
+    type ChangePasswordInput,
+    type UpdateProfileInput,
 } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  AlertCircle,
-  AlertTriangle,
-  BadgeCheck,
-  BadgeX,
-  Loader2,
-  LockKeyhole,
-  Mail,
-  RefreshCw,
-  Shield,
-  Trash2,
-  User,
+    AlertCircle,
+    AlertTriangle,
+    BadgeCheck,
+    BadgeX,
+    Loader2,
+    LockKeyhole,
+    Mail,
+    RefreshCw,
+    Shield,
+    Trash2,
+    User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 export default function ParametresPage() {
   const router = useRouter();
@@ -96,8 +97,8 @@ export default function ParametresPage() {
     try {
       await updateProfile(data);
       toast.success("Profil mis à jour avec succès");
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la mise à jour du profil");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Erreur lors de la mise à jour du profil");
     }
   };
 
@@ -107,8 +108,8 @@ export default function ParametresPage() {
       toast.success("Mot de passe modifié avec succès");
       passwordForm.reset();
       setRevokeOtherSessions(false);
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors du changement de mot de passe");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Erreur lors du changement de mot de passe");
     }
   };
 
@@ -118,8 +119,8 @@ export default function ParametresPage() {
     try {
       await sendVerificationEmail(user.email);
       toast.success("Email de vérification renvoyé");
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de l'envoi de l'email");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Erreur lors de l'envoi de l'email");
     } finally {
       setIsResendingVerification(false);
     }
@@ -134,8 +135,8 @@ export default function ParametresPage() {
       toast.success("Compte supprimé avec succès");
       // Redirect to landing page after deletion
       router.push("/");
-    } catch (error: any) {
-      toast.error(error.message || "Erreur lors de la suppression du compte");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Erreur lors de la suppression du compte");
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);

@@ -1,13 +1,14 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    forbiddenResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { getErrorMessage } from "@/lib/types";
 import { UpdateStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -61,9 +62,9 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     return successResponse(session);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Get session error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -130,9 +131,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
     });
 
     return successResponse(updatedSession);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update session error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }
 
@@ -185,8 +186,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     });
 
     return successResponse({ message: "Session supprimée avec succès" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Delete session error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

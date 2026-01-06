@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import { AlertCircle, CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -34,9 +35,10 @@ function VerifyEmailContent() {
       await sendVerificationEmail(email);
       setResendSuccess(true);
       toast.success("Email de vérification renvoyé !");
-    } catch (err: any) {
-      setResendError(err.message || "Erreur lors de l'envoi de l'email");
-      toast.error(err.message || "Erreur lors de l'envoi de l'email");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setResendError(message);
+      toast.error(message);
     } finally {
       setIsResending(false);
     }

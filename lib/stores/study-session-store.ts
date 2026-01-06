@@ -1,3 +1,4 @@
+import { CanvasState, EditorState, getErrorMessage } from "@/lib/types";
 import axios from "axios";
 import { create } from "zustand";
 
@@ -10,8 +11,8 @@ export interface StudySession {
   startedAt: string;
   endedAt: string | null;
   duration: number | null;
-  canvasState: any | null;
-  editorState: any | null;
+  canvasState: CanvasState | null;
+  editorState: EditorState | null;
   createdAt: string;
   workspace?: {
     id: string;
@@ -57,8 +58,8 @@ interface StudySessionActions {
   updateStudySession: (
     sessionId: string,
     data: {
-      canvasState?: any;
-      editorState?: any;
+      canvasState?: CanvasState;
+      editorState?: EditorState;
     }
   ) => Promise<void>;
 
@@ -66,8 +67,8 @@ interface StudySessionActions {
   endStudySession: (
     sessionId: string,
     data?: {
-      canvasState?: any;
-      editorState?: any;
+      canvasState?: CanvasState;
+      editorState?: EditorState;
     }
   ) => Promise<void>;
 
@@ -112,11 +113,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
         `/api/sessions?workspaceId=${workspaceId}`
       );
       set({ studySessions: data.data, isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error ||
-          "Erreur lors du chargement des sessions",
+        error: getErrorMessage(error),
         isLoading: false,
       });
       throw error;
@@ -137,11 +136,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
       });
 
       return studySession;
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error ||
-          "Erreur lors de la création de la session",
+        error: getErrorMessage(error),
         isCreating: false,
       });
       throw error;
@@ -154,11 +151,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
     try {
       const { data } = await axios.get(`/api/sessions/${sessionId}`);
       set({ currentStudySession: data.data, isLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error ||
-          "Erreur lors du chargement de la session",
+        error: getErrorMessage(error),
         isLoading: false,
       });
       throw error;
@@ -169,8 +164,8 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
   updateStudySession: async (
     sessionId: string,
     updateData: {
-      canvasState?: any;
-      editorState?: any;
+      canvasState?: CanvasState;
+      editorState?: EditorState;
     }
   ) => {
     set({ isSaving: true, error: null });
@@ -188,9 +183,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
         ),
         isSaving: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error: error.response?.data?.error || "Erreur lors de la sauvegarde",
+        error: getErrorMessage(error),
         isSaving: false,
       });
       // Don't throw - auto-save failures should be silent
@@ -202,8 +197,8 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
   endStudySession: async (
     sessionId: string,
     finalData?: {
-      canvasState?: any;
-      editorState?: any;
+      canvasState?: CanvasState;
+      editorState?: EditorState;
     }
   ) => {
     set({ isEnding: true, error: null });
@@ -221,10 +216,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
         ),
         isEnding: false,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error || "Erreur lors de la fin de la session",
+        error: getErrorMessage(error),
         isEnding: false,
       });
       throw error;
@@ -241,9 +235,9 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
         currentStudySession:
           get().currentStudySession?.id === sessionId ? null : get().currentStudySession,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error: error.response?.data?.error || "Erreur lors de la suppression",
+        error: getErrorMessage(error),
       });
       throw error;
     }
@@ -254,7 +248,7 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
     try {
       const { data } = await axios.get(`/api/sessions/${sessionId}/yjs`);
       return data.data.yjsState || null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch Yjs state:", error);
       return null;
     }
@@ -264,7 +258,7 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
   saveYjsState: async (sessionId: string, yjsState: number[]) => {
     try {
       await axios.post(`/api/sessions/${sessionId}/yjs`, { yjsState });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save Yjs state:", error);
       // Silent failure for auto-save
     }
@@ -275,7 +269,7 @@ export const useStudySessionStore = create<StudySessionStore>((set, get) => ({
     try {
       await axios.post("/api/pusher/broadcast", { channel, event, data });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to broadcast event:", error);
       return false;
     }

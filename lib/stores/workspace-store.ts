@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/types";
 import axios from "axios";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
@@ -132,9 +133,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             pagination: data.data.pagination,
             isLoading: false,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({
-            error: error.response?.data?.error || "Failed to fetch workspaces",
+            error: getErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -155,9 +156,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           }));
 
           return newWorkspace;
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({
-            error: error.response?.data?.error || "Failed to create workspace",
+            error: getErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -175,9 +176,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             workspaces: state.workspaces.filter((w) => w.id !== id),
             isLoading: false,
           }));
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({
-            error: error.response?.data?.error || "Failed to delete workspace",
+            error: getErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -200,9 +201,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           }));
 
           return newWorkspace;
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({
-            error: error.response?.data?.error || "Failed to join workspace",
+            error: getErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -222,10 +223,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           });
 
           return workspace;
-        } catch (error: any) {
+        } catch (error: unknown) {
           set({
-            error:
-              error.response?.data?.error || "Failed to fetch workspace detail",
+            error: getErrorMessage(error),
             isLoading: false,
           });
           throw error;
@@ -242,7 +242,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           // Refresh workspace detail
           const { data } = await axios.get(`/api/workspaces/${workspaceId}`);
           set({ currentWorkspace: data.data });
-        } catch (error: any) {
+        } catch (error: unknown) {
           throw error;
         }
       },
@@ -257,7 +257,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           // Refresh workspace detail
           const { data } = await axios.get(`/api/workspaces/${workspaceId}`);
           set({ currentWorkspace: data.data });
-        } catch (error: any) {
+        } catch (error: unknown) {
           throw error;
         }
       },
@@ -273,7 +273,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           // Refresh workspace detail
           const { data } = await axios.get(`/api/workspaces/${workspaceId}`);
           set({ currentWorkspace: data.data });
-        } catch (error: any) {
+        } catch (error: unknown) {
           throw error;
         }
       },

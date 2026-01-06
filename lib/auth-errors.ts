@@ -3,9 +3,11 @@
  * Maps Supabase auth error codes to user-friendly French messages
  */
 
-export function getAuthErrorMessage(error: any): string {
+export function getAuthErrorMessage(error: unknown): string {
+  // Cast to access properties safely
+  const err = error as { code?: string; error_code?: string; message?: string };
   // If error has a code property (Supabase errors)
-  const code = error?.code || error?.error_code;
+  const code = err?.code || err?.error_code;
 
   const errorMessages: Record<string, string> = {
     // Email/Password errors
@@ -45,7 +47,7 @@ export function getAuthErrorMessage(error: any): string {
   }
 
   // Check error message for common patterns
-  const message = error?.message?.toLowerCase() || "";
+  const message = err?.message?.toLowerCase() || "";
 
   if (message.includes("email not confirmed")) {
     return errorMessages.email_not_confirmed;
@@ -70,5 +72,5 @@ export function getAuthErrorMessage(error: any): string {
   }
 
   // Default fallback
-  return error?.message || "Une erreur est survenue. Veuillez réessayer";
+  return err?.message || "Une erreur est survenue. Veuillez réessayer";
 }

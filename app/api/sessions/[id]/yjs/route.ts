@@ -7,6 +7,7 @@
 
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
+import { EditorState } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 type Params = {
@@ -56,9 +57,8 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     // Extract Yjs state from editorState
-    const yjsState = session.editorState
-      ? (session.editorState as any).yjsState
-      : null;
+    const editorState = session.editorState as EditorState | null;
+    const yjsState = editorState?.yjsState ?? null;
 
     return NextResponse.json({
       success: true,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest, { params }: Params) {
         yjsState,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Yjs GET] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -124,8 +124,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
 
     // Update editorState with Yjs state
-    const currentEditorState = (session.editorState as any) || {};
-    const updatedEditorState = {
+    const currentEditorState = (session.editorState as EditorState | null) ?? {};
+    const updatedEditorState: EditorState = {
       ...currentEditorState,
       yjsState,
       lastUpdated: new Date().toISOString(),
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       success: true,
       message: "Yjs state saved",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Yjs POST] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

@@ -1,14 +1,15 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    forbiddenResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
 import { getPusherServer } from "@/lib/pusher/server";
+import { getErrorMessage } from "@/lib/types";
 import { EndStudySessionSchema } from "@/lib/validations";
 import { NextRequest } from "next/server";
 
@@ -105,8 +106,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     return successResponse(studySession);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("End studySession error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import { AlertCircle, CheckCircle2, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -33,9 +34,10 @@ export default function ForgotPasswordPage() {
       await requestPasswordReset(email);
       setSuccess(true);
       toast.success("Email de réinitialisation envoyé !");
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de l'envoi de l'email");
-      toast.error(err.message || "Erreur lors de l'envoi de l'email");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error(message);
     }
   };
 

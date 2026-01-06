@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/lib/types";
 import axios from "axios";
 import { create } from "zustand";
 
@@ -62,11 +63,9 @@ export const useSessionNotesStore = create<SessionNotesStore>((set) => ({
           ? new Date(data.data.updatedAt)
           : null,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error ||
-          "Erreur lors du chargement des notes",
+        error: getErrorMessage(error),
         isLoading: false,
       });
     }
@@ -84,11 +83,9 @@ export const useSessionNotesStore = create<SessionNotesStore>((set) => ({
         isSaving: false,
         lastSavedAt: new Date(),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       set({
-        error:
-          error.response?.data?.error ||
-          "Erreur lors de la sauvegarde des notes",
+        error: getErrorMessage(error),
         isSaving: false,
       });
       // Silent failure for auto-save

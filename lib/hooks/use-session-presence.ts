@@ -86,7 +86,7 @@ export function useSessionPresence({
       // Pusher presence channel uses .each() to iterate members
       // @ts-ignore - members.each exists on presence channels
       if (data.members && typeof data.members === "object") {
-        Object.entries(data.members).forEach(([id, info]: [string, any]) => {
+        Object.entries(data.members).forEach(([id, info]: [string, { id: string; name: string; email: string; color: string }]) => {
           membersList.push({
             id: info.id || id,
             name: info.name || "Utilisateur",
@@ -148,7 +148,7 @@ export function useSessionPresence({
       const channelMembers = pusherChannel.members;
       if (channelMembers) {
         const membersList: SessionMember[] = [];
-        channelMembers.each((member: { id: string; info: any }) => {
+        channelMembers.each((member: { id: string; info: { id: string; name: string; email: string; color: string } }) => {
           membersList.push({
             id: member.info.id || member.id,
             name: member.info.name || "Utilisateur",

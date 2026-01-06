@@ -2,7 +2,6 @@
 
 import { toast } from "sonner";
 
-import { WorkspaceFiles } from "@/components/workspace/WorkspaceFiles";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,10 +24,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WorkspaceFiles } from "@/components/workspace/WorkspaceFiles";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
 import { useWorkspaceDetail } from "@/lib/hooks/use-workspace";
+import { getPusherClient } from "@/lib/pusher/client";
+import type { StudySession } from "@/lib/stores/study-session-store";
+import { getErrorMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -48,10 +51,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { getPusherClient } from "@/lib/pusher/client";
 import type { Channel } from "pusher-js";
-import type { StudySession } from "@/lib/stores/study-session-store";
+import { useEffect, useState } from "react";
 
 const tagLabels: Record<string, string> = {
   maths: "Maths",
@@ -206,9 +207,9 @@ export default function WorkspaceDetailPage() {
       // Reset and close dialog
       setMemberEmail("");
       setAddMemberOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setAddMemberError(
-        err.response?.data?.error || "Impossible d'ajouter le membre"
+        getErrorMessage(err) || "Impossible d'ajouter le membre"
       );
     } finally {
       setAddMemberLoading(false);
@@ -228,9 +229,9 @@ export default function WorkspaceDetailPage() {
     try {
       await removeMemberFromWorkspace(workspaceId, userId);
       toast.success("Membre retiré du workspace");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err.response?.data?.error || "Impossible de retirer le membre"
+        getErrorMessage(err) || "Impossible de retirer le membre"
       );
     }
   };
@@ -252,9 +253,9 @@ export default function WorkspaceDetailPage() {
       await removeMemberFromWorkspace(workspaceId, user.id);
       toast.success("Vous avez quitté le workspace");
       router.push("/dashboard/workspaces");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err.response?.data?.error || "Impossible de quitter le workspace"
+        getErrorMessage(err) || "Impossible de quitter le workspace"
       );
     }
   };
@@ -272,9 +273,9 @@ export default function WorkspaceDetailPage() {
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "OWNER");
       toast.success("Membre promu propriétaire");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err.response?.data?.error || "Impossible de modifier le rôle"
+        getErrorMessage(err) || "Impossible de modifier le rôle"
       );
     }
   };
@@ -292,9 +293,9 @@ export default function WorkspaceDetailPage() {
     try {
       await updateMemberRoleInWorkspace(workspaceId, userId, "MEMBER");
       toast.success("Rôle modifié en membre");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err.response?.data?.error || "Impossible de modifier le rôle"
+        getErrorMessage(err) || "Impossible de modifier le rôle"
       );
     }
   };

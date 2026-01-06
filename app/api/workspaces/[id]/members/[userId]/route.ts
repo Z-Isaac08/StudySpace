@@ -1,12 +1,13 @@
 import {
-  errorResponse,
-  forbiddenResponse,
-  successResponse,
-  unauthorizedResponse,
+    errorResponse,
+    forbiddenResponse,
+    successResponse,
+    unauthorizedResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceOwner } from "@/lib/auth/session";
 import prisma from "@/lib/prisma";
 import { getPusherServer } from "@/lib/pusher/server";
+import { getErrorMessage } from "@/lib/types";
 import { NextRequest } from "next/server";
 
 type Params = {
@@ -98,8 +99,8 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
         ? "Vous avez quitté le workspace avec succès"
         : "Membre retiré avec succès",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Remove member error:", error);
-    return errorResponse(error.message, 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 }

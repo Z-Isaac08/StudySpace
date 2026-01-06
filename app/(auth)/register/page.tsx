@@ -7,15 +7,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { getErrorMessage } from "@/lib/types";
 import {
-  AlertCircle,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  Mail,
-  User,
+    AlertCircle,
+    CheckCircle2,
+    Eye,
+    EyeOff,
+    Loader2,
+    Lock,
+    Mail,
+    User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -74,9 +75,10 @@ function RegisterForm() {
         : `/verify-email?email=${encodeURIComponent(email)}`;
 
       router.push(redirectUrl);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de l'inscription");
-      toast.error(err.message || "Erreur lors de l'inscription");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error(message);
     }
   };
 
