@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
     // Get current authenticated user
     const user = await getCurrentUser();
 
+    console.log("[Pusher Auth] User check:", user ? `Found: ${user.id}` : "Not authenticated");
+
     if (!user) {
+      console.log("[Pusher Auth] Returning 401 - user not authenticated");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
