@@ -766,7 +766,7 @@ export default function WorkspaceDetailPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={async (e) => {
+                                onClick={async (e: React.MouseEvent) => {
                                   e.preventDefault();
                                   e.stopPropagation();
 

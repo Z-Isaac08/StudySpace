@@ -180,7 +180,7 @@ export const useAuthStore = create<AuthState>()(
         changePassword: async (
           currentPassword: string,
           newPassword: string,
-          revokeOtherSessions = false
+          revokeOtherSessions = true // Sécurité: révoque les autres sessions par défaut
         ) => {
           set({ isLoading: true });
           try {
@@ -289,7 +289,8 @@ export const useAuthStore = create<AuthState>()(
             });
             if (result.error) {
               throw new Error(
-                result.error.message || "Erreur lors de la suppression du compte"
+                result.error.message ||
+                  "Erreur lors de la suppression du compte"
               );
             }
             // Clear session after successful deletion

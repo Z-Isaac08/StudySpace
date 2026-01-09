@@ -150,7 +150,7 @@ Une plateforme tout-en-un qui :
 | **MathLive** | Éditeur d'équations WYSIWYG |
 | **Yjs** | CRDT pour synchronisation temps réel |
 | **TipTap** | Éditeur de texte riche (basé sur ProseMirror) |
-| **Socket.IO Client** | WebSocket temps réel |
+| **Pusher Client** | WebSocket temps réel |
 | **Zustand** | State management global |
 | **React Hook Form** | Gestion de formulaires |
 | **Zod** | Validation de schémas |
@@ -162,7 +162,7 @@ Une plateforme tout-en-un qui :
 | **Node.js** | 20 LTS | Runtime JavaScript |
 | **Express** / **Fastify** | Latest | Framework API REST |
 | **TypeScript** | 5.3 | Type safety |
-| **Socket.IO** | 4.7 | WebSocket pour temps réel |
+| **Pusher** | Latest | WebSocket temps réel |
 | **PostgreSQL** | 16 | Base de données relationnelle |
 | **Prisma** | 5.x | ORM TypeScript-first |
 | **Redis** | 7.x | Cache & session store |
@@ -220,7 +220,7 @@ Une plateforme tout-en-un qui :
 │  │  └──────────┘  └──────────┘  └──────────┘     │   │
 │  └─────────────────────────────────────────────────┘   │
 │           │                    │                         │
-│      HTTP REST           WebSocket (Socket.IO)          │
+│      HTTP REST           WebSocket (Pusher)             │
 │           │                    │                         │
 └───────────┼────────────────────┼─────────────────────────┘
             │                    │
@@ -229,7 +229,7 @@ Une plateforme tout-en-un qui :
 │                    Backend (Node.js)                      │
 │  ┌────────────────┐          ┌────────────────┐         │
 │  │  REST API      │          │  Socket Server │         │
-│  │  (Express)     │          │  (Socket.IO)   │         │
+│  │  (Express)     │          │  (Pusher)      │         │
 │  └────────────────┘          └────────────────┘         │
 │           │                           │                   │
 │           ▼                           ▼                   │
@@ -748,7 +748,7 @@ jobs:
 - [x] Création de workspaces
 - [x] Invitation par lien
 - [x] Tableau blanc collaboratif
-- [x] Éditeur d'équations WYSIWYG
+- [ ] Éditeur d'équations WYSIWYG
 - [x] Éditeur de texte collaboratif
 - [x] Visio intégrée
 - [x] Upload de fichiers

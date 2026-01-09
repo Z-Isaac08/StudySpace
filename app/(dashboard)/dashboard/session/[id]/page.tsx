@@ -215,7 +215,7 @@ export default function SessionPage() {
     if (!currentStudySession) return;
 
     // Restore editor state
-    if (currentStudySession.editorState?.content) {
+    if (currentStudySession.editorState?.content && typeof currentStudySession.editorState.content === "string") {
       setEditorContent(currentStudySession.editorState.content);
     }
     // Note: Canvas state is now handled by tldraw sync - no need to restore manually

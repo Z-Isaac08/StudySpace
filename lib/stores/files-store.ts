@@ -14,10 +14,10 @@ export interface WorkspaceFile {
   mimeType: string;
   url: string;
   uploadedAt: string;
-  uploadedBy: {
+  uploadedBy?: {
     id: string;
     name: string;
-  };
+  } | null;
 }
 
 interface FilesState {
@@ -56,12 +56,23 @@ export const useFilesStore = create<FilesState & FilesActions>((set, get) => ({
   uploadFile: async (workspaceId: string, file: File) => {
     set({ isUploading: true, error: null });
     try {
-      await upload(file.name, file, {
+      // Upload to Vercel Blob
+      const blob = await upload(file.name, file, {
         access: "public",
         handleUploadUrl: "/api/files/upload",
         clientPayload: JSON.stringify({ workspaceId }),
       });
-      // Refresh files list to get the new file with DB info
+
+      // Save file metadata to database
+      await axios.post("/api/files/save", {
+        workspaceId,
+        name: file.name,
+        url: blob.url,
+        size: file.size,
+        mimeType: file.type || "application/octet-stream",
+      });
+
+      // Refresh files list
       await get().fetchFiles(workspaceId);
     } catch (error: unknown) {
       set({ error: getErrorMessage(error) });

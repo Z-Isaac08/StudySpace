@@ -60,38 +60,10 @@ export async function POST(request: Request): Promise<NextResponse> {
           }),
         };
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Called when upload completes
+      onUploadCompleted: async ({ blob }) => {
+        // Note: File is saved to database via /api/files/save after client upload
+        // onUploadCompleted is a webhook that doesn't work in local dev
         console.log("[Files] Upload completed:", blob.pathname);
-
-        try {
-          const payload = JSON.parse(tokenPayload || "{}");
-          const { userId, workspaceId, filename } = payload;
-
-          if (!userId || !workspaceId) {
-            console.error("[Files] Missing payload data");
-            return;
-          }
-
-          // Save file to database
-          // Note: blob.size is not available in onUploadCompleted callback
-          // We'll fetch the size from the blob URL headers if needed, or use 0 as placeholder
-          await prisma.file.create({
-            data: {
-              workspaceId,
-              uploadedById: userId,
-              name: filename || blob.pathname.split("/").pop() || "file",
-              size: 0, // Size not available in callback, will be updated if needed
-              mimeType: blob.contentType || "application/octet-stream",
-              url: blob.url,
-            },
-          });
-
-          console.log("[Files] File saved to database");
-        } catch (error) {
-          console.error("[Files] Error saving to database:", error);
-          throw new Error("Could not save file");
-        }
       },
     });
 

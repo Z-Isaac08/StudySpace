@@ -1,7 +1,7 @@
 "use client";
 
 import { useFiles } from "@/lib/hooks/use-files";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -32,18 +32,12 @@ export function SessionFilesPanel({
   onClose,
 }: SessionFilesPanelProps) {
   const { files, isLoading, fetchFiles } = useFiles();
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && workspaceId) {
       fetchFiles(workspaceId);
     }
   }, [isOpen, workspaceId, fetchFiles]);
-
-  // Find selected file data
-  const selectedFileData = files.find((f) => f.id === selectedFile);
-  const isImage = selectedFileData?.mimeType.startsWith("image/");
-  const isPdf = selectedFileData?.mimeType === "application/pdf";
 
   return (
     <div
@@ -65,85 +59,63 @@ export function SessionFilesPanel({
       </div>
 
       {/* Content */}
-      <div className="flex flex-col h-[calc(100%-3.5rem)]">
-        {/* File list */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : files.length > 0 ? (
-            <div className="space-y-1">
-              {files.map((file) => {
-                const isActive = selectedFile === file.id;
-                return (
-                  <button
-                    key={file.id}
-                    onClick={() => setSelectedFile(isActive ? null : file.id)}
-                    className={cn(
-                      "w-full flex items-center gap-2 p-2 rounded-md text-left text-sm",
-                      "hover:bg-accent transition-colors",
-                      isActive && "bg-accent"
-                    )}
-                  >
+      <div className="h-[calc(100%-3.5rem)] overflow-y-auto p-2">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : files.length > 0 ? (
+          <div className="space-y-1">
+            {files.map((file) => {
+              const isImage = file.mimeType.startsWith("image/");
+              return (
+                <a
+                  key={file.id}
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-md text-left text-sm",
+                    "hover:bg-accent transition-colors group"
+                  )}
+                >
+                  {/* Thumbnail for images */}
+                  {isImage ? (
+                    <div className="h-10 w-10 shrink-0 rounded overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
                     <div
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded",
-                        file.mimeType.startsWith("image/")
-                          ? "bg-purple-100 text-purple-600"
-                          : "bg-blue-100 text-blue-600"
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded",
+                        "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                       )}
                     >
                       {getFileIcon(file.mimeType)}
                     </div>
-                    <span className="truncate flex-1">{file.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground text-sm">
-              <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p>Aucun fichier</p>
-            </div>
-          )}
-        </div>
-
-        {/* Preview area */}
-        {selectedFileData && (
-          <div className="border-t p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground truncate flex-1">
-                {selectedFileData.name}
-              </span>
-              <Button variant="ghost" size="sm" className="h-7 gap-1" asChild>
-                <a href={selectedFileData.url} target="_blank" rel="noopener">
-                  <ExternalLink className="h-3 w-3" />
-                  Ouvrir
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.mimeType.split("/")[1]?.toUpperCase() || "FILE"}
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </a>
-              </Button>
-            </div>
-
-            {/* Image preview */}
-            {isImage && (
-              <div className="rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                <img
-                  src={selectedFileData.url}
-                  alt={selectedFileData.name}
-                  className="w-full h-40 object-contain"
-                />
-              </div>
-            )}
-
-            {/* PDF preview */}
-            {isPdf && (
-              <div className="rounded-md overflow-hidden bg-neutral-100 dark:bg-neutral-900 h-40 flex items-center justify-center">
-                <div className="text-center text-muted-foreground text-sm">
-                  <FileText className="mx-auto h-8 w-8 mb-2" />
-                  <p>PDF - Cliquer pour ouvrir</p>
-                </div>
-              </div>
-            )}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-muted-foreground text-sm">
+            <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
+            <p>Aucun fichier</p>
+            <p className="text-xs mt-1">
+              Ajoutez des fichiers depuis le workspace
+            </p>
           </div>
         )}
       </div>

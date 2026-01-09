@@ -110,6 +110,14 @@ export const UploadFileSchema = z.object({
   mimeType: z.string().regex(/^[a-z]+\/[a-z0-9\-\+]+$/i, "Type MIME invalide"),
 });
 
+export const SaveFileSchema = z.object({
+  workspaceId: z.string().min(1, "ID de workspace requis"),
+  name: z.string().min(1, "Le nom du fichier est requis"),
+  url: z.string().url("URL invalide"),
+  size: z.number().optional().default(0),
+  mimeType: z.string().optional().default("application/octet-stream"),
+});
+
 // ============================================
 // QUERY PARAMS SCHEMAS
 // ============================================
@@ -143,6 +151,7 @@ export type UpdateStudySessionInput = z.infer<typeof UpdateStudySessionSchema>;
 export type EndStudySessionInput = z.infer<typeof EndStudySessionSchema>;
 
 export type UploadFileInput = z.infer<typeof UploadFileSchema>;
+export type SaveFileInput = z.infer<typeof SaveFileSchema>;
 
 export type PaginationInput = z.infer<typeof PaginationSchema>;
 export type WorkspaceFilterInput = z.infer<typeof WorkspaceFilterSchema>;

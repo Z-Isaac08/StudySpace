@@ -1,4 +1,4 @@
-# GEMINI.md - Instructions pour l'assistant IA
+# StudySpace - Guide de Développement
 
 ## 📋 Contexte du projet
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 🛠️ Stack technique (État actuel)
+## 🛠️ Stack technique
 
 ### Frontend
 
@@ -41,13 +41,6 @@
 - **Auth :** Better Auth (email/password)
 - **Storage :** Cloudflare R2 / AWS S3 (future)
 - **Proxy :** Next.js 16 Proxy (remplace middleware)
-
-### Outils futurs (non implémentés)
-
-- **Visio :** À décider (Agora SDK ou Daily.co)
-- **Canvas :** À décider (Konva.js ou Fabric.js)
-- **Équations :** MathLive
-- **Editor collaboratif :** Yjs + TipTap
 
 ---
 
@@ -98,7 +91,7 @@ export const useAuthStore = create();
 export const useAuth = () => useAuthStore();
 ```
 
-### Structure de fichiers (Actuelle)
+### Structure de fichiers
 
 ```
 app/
@@ -404,8 +397,8 @@ export async function POST(request: Request) {
 
 - Landing page ✅
 - Auth Better Auth ✅
-- Workspaces collaboratifs ⏳
-- Tableau blanc ⏳
+- Workspaces collaboratifs ✅
+- Tableau blanc ✅
 - Visio ⏳
 - Partage fichiers ⏳
 

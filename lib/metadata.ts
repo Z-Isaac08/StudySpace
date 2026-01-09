@@ -163,7 +163,8 @@ export const pageMetadata = {
 
   verifyEmail: createMetadata({
     title: "Vérification de l'email",
-    description: "Vérifiez votre adresse email pour activer votre compte StudySpace.",
+    description:
+      "Vérifiez votre adresse email pour activer votre compte StudySpace.",
     path: "/verify-email",
     noIndex: true,
   }),

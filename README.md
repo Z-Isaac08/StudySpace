@@ -91,6 +91,8 @@ StudySpace permet à des groupes d'étudiants de travailler ensemble comme s'ils
 - **Base de données** : PostgreSQL (Neon)
 - **ORM** : Prisma 7.0.1 avec @prisma/adapter-pg 6.0.1
 - **Authentification** : Better Auth 1.4.9 avec Prisma adapter
+- **Temps réel** : Pusher (WebSocket)
+- **Storage** : Vercel Blob
 - **Email** : Resend 6.6.0 + React Email 5.1.0
 - **Validation** : Zod 4.1.13
 
@@ -154,6 +156,25 @@ EMAIL_FROM="StudySpace <noreply@votredomaine.com>"
 # APP CONFIG
 # ===========================================
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# ===========================================
+# PUSHER (Real-time)
+# ===========================================
+# Credentials from https://dashboard.pusher.com
+PUSHER_APP_ID="your-app-id"
+PUSHER_KEY="your-key"
+PUSHER_SECRET="your-secret"
+PUSHER_CLUSTER="eu"
+
+# Client-side public keys
+NEXT_PUBLIC_PUSHER_KEY="your-key"
+NEXT_PUBLIC_PUSHER_CLUSTER="eu"
+
+# ===========================================
+# VERCEL BLOB (Storage)
+# ===========================================
+# Token from Vercel Dashboard > Storage > Blob
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 ```
 
 ⚠️ **Important** :
