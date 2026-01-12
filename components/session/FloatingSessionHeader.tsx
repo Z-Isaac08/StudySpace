@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SessionPresenceAvatars } from "./SessionPresenceAvatars";
+import { VoiceControls } from "./VoiceControls";
 
 interface FloatingSessionHeaderProps {
   workspaceId: string;
@@ -39,6 +40,12 @@ interface FloatingSessionHeaderProps {
   onTerminate: () => void;
   onToggleNotes: () => void;
   onToggleFiles: () => void;
+  // Voice
+  voiceConnected: boolean;
+  voiceConnecting: boolean;
+  voiceMuted: boolean;
+  voiceError: string | null;
+  onToggleVoiceMute: () => void;
 }
 
 // Tag accent colors for the header border
@@ -84,6 +91,11 @@ export function FloatingSessionHeader({
   onTerminate,
   onToggleNotes,
   onToggleFiles,
+  voiceConnected,
+  voiceConnecting,
+  voiceMuted,
+  voiceError,
+  onToggleVoiceMute,
 }: FloatingSessionHeaderProps) {
   const accentColor = workspaceTag ? tagAccentColors[workspaceTag] : "";
   const dotColor = workspaceTag ? tagDotColors[workspaceTag] : "";
@@ -145,6 +157,20 @@ export function FloatingSessionHeader({
               maxVisible={4}
             />
           </div>
+
+          {/* Divider */}
+          <div className="mx-1 h-5 w-px bg-border" />
+
+          {/* Voice controls */}
+          {!isEnded && (
+            <VoiceControls
+              isConnected={voiceConnected}
+              isConnecting={voiceConnecting}
+              isMuted={voiceMuted}
+              error={voiceError}
+              onToggleMute={onToggleVoiceMute}
+            />
+          )}
 
           {/* Divider */}
           <div className="mx-1 h-5 w-px bg-border" />

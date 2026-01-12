@@ -19,6 +19,7 @@ import { useConfirm } from "@/lib/hooks/use-confirm";
 import { useStudySession } from "@/lib/hooks/use-study-session";
 import { useConnectionOrchestrator, type SystemStatus } from "@/lib/hooks/use-connection-orchestrator";
 import { useSessionPresence } from "@/lib/hooks/use-session-presence";
+import { useVoiceChat } from "@/lib/hooks/use-voice-chat";
 import { getPusherClient } from "@/lib/pusher/client";
 import { cn } from "@/lib/utils";
 import { Loader2, NotebookPen, Paintbrush, Type, X } from "lucide-react";
@@ -139,6 +140,20 @@ export default function SessionPage() {
   } = useSessionPresence({
     pusherChannel,
     currentUserId: user?.id || "",
+  });
+
+  // Voice chat - auto-connects when session is active
+  const {
+    isConnected: voiceConnected,
+    isConnecting: voiceConnecting,
+    isMuted: voiceMuted,
+    error: voiceError,
+    toggleMute: toggleVoiceMute,
+  } = useVoiceChat({
+    sessionId,
+    odlUserId: user?.id || "",
+    odlUserName: user?.name || "Anonyme",
+    enabled: !!user && !!currentStudySession && !currentStudySession.endedAt,
   });
 
   // Handle Tldraw connection status changes
@@ -380,6 +395,12 @@ export default function SessionPage() {
           onTerminate={() => handleTerminateSession(false)}
           onToggleNotes={() => setIsNotesOpen((prev) => !prev)}
           onToggleFiles={() => setIsFilesOpen((prev) => !prev)}
+          // Voice chat props
+          voiceConnected={voiceConnected}
+          voiceConnecting={voiceConnecting}
+          voiceMuted={voiceMuted}
+          voiceError={voiceError}
+          onToggleVoiceMute={toggleVoiceMute}
         />
 
         {/* Main content - Split-screen layout */}

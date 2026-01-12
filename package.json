@@ -52,6 +52,8 @@
     "@tiptap/y-tiptap": "^3.0.1",
     "@tldraw/sync": "^4.2.1",
     "@vercel/blob": "^2.0.0",
+    "agora-rtc-sdk-ng": "^4.24.2",
+    "agora-token": "^2.0.5",
     "axios": "^1.13.2",
     "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",
