@@ -1,12 +1,14 @@
+import type { Prisma } from "@/generated/prisma/client";
 import {
-    errorResponse,
-    forbiddenResponse,
-    notFoundResponse,
-    successResponse,
-    unauthorizedResponse,
-    validationErrorResponse,
+  errorResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 import { getPusherServer } from "@/lib/pusher/server";
 import { getErrorMessage } from "@/lib/types";
@@ -73,8 +75,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       data: {
         endedAt,
         duration,
-        canvasState,
-        editorState,
+        canvasState: canvasState as Prisma.InputJsonValue,
+        editorState: editorState as Prisma.InputJsonValue,
       },
       include: {
         workspace: {
@@ -102,12 +104,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
         { sessionId: id }
       );
     } catch (err) {
-      console.error("Failed to broadcast session-ended:", err);
+      logger.error("Failed to broadcast session-ended:", err);
     }
 
     return successResponse(studySession);
   } catch (error: unknown) {
-    console.error("End studySession error:", error);
+    logger.error("End studySession error:", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }

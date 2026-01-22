@@ -1,6 +1,7 @@
 /**
  * Pusher Server Configuration - StudySpace
  */
+import { logger } from "@/lib/logger"; // Import logger
 import Pusher from "pusher";
 
 // Étendre l'objet global pour TypeScript afin de stocker l'instance Pusher
@@ -31,7 +32,7 @@ export function getPusherServer(): Pusher {
       useTLS: true,
     });
 
-    console.log("[Pusher Server] ✅ Instance initialized");
+    logger.info("[Pusher Server] ✅ Instance initialized");
   }
 
   return global.pusherServerInstance;

@@ -1,11 +1,12 @@
 import type { Prisma } from "@/generated/prisma/client";
 import {
-  errorResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
+    errorResponse,
+    successResponse,
+    unauthorizedResponse,
+    validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 import { getErrorMessage } from "@/lib/types";
 import { CreateWorkspaceSchema } from "@/lib/validations";
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("[WORKSPACES_GET]", error);
+    logger.error("[WORKSPACES_GET]", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(workspace, 201);
   } catch (error: unknown) {
-    console.error("Create workspace error:", error);
+    logger.error("Create workspace error:", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }

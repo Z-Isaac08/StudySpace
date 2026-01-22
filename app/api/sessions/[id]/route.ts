@@ -1,12 +1,14 @@
+import type { Prisma } from "@/generated/prisma/client";
 import {
-    errorResponse,
-    forbiddenResponse,
-    notFoundResponse,
-    successResponse,
-    unauthorizedResponse,
-    validationErrorResponse,
+  errorResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
 } from "@/lib/api-response";
 import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 import { getErrorMessage } from "@/lib/types";
 import { UpdateStudySessionSchema } from "@/lib/validations";
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     return successResponse(session);
   } catch (error: unknown) {
-    console.error("Get session error:", error);
+    logger.error("Get session error:", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }
@@ -110,8 +112,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const updatedSession = await prisma.studySession.update({
       where: { id },
       data: {
-        canvasState: validated.data.canvasState ?? existingSession.canvasState,
-        editorState: validated.data.editorState ?? existingSession.editorState,
+        canvasState: (validated.data.canvasState ?? existingSession.canvasState) as Prisma.InputJsonValue,
+        editorState: (validated.data.editorState ?? existingSession.editorState) as Prisma.InputJsonValue,
       },
       include: {
         workspace: {
@@ -132,7 +134,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     return successResponse(updatedSession);
   } catch (error: unknown) {
-    console.error("Update session error:", error);
+    logger.error("Update session error:", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }
@@ -187,7 +189,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     return successResponse({ message: "Session supprimée avec succès" });
   } catch (error: unknown) {
-    console.error("Delete session error:", error);
+    logger.error("Delete session error:", error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }

@@ -2,6 +2,7 @@ import { EMAIL_CONFIG, resend } from "@/lib/email/resend";
 import ChangeEmailTemplate from "@/lib/email/templates/change-email";
 import ResetPasswordEmail from "@/lib/email/templates/reset-password-email";
 import VerificationEmail from "@/lib/email/templates/verification-email";
+import { logger } from "@/lib/logger";
 import prisma from "@/lib/prisma";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -33,11 +34,11 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url, token }, request) => {
       // En développement, toujours afficher le lien dans la console
       if (process.env.NODE_ENV !== "production") {
-        console.log("=".repeat(80));
-        console.log("🔐 EMAIL DE RESET (DEV MODE)");
-        console.log("Pour:", user.email);
-        console.log("Lien de réinitialisation:", url);
-        console.log("=".repeat(80));
+        logger.log("=".repeat(80));
+        logger.log("🔐 EMAIL DE RESET (DEV MODE)");
+        logger.log("Pour:", user.email);
+        logger.log("Lien de réinitialisation:", url);
+        logger.log("=".repeat(80));
         return; // Ne pas envoyer d'email en dev
       }
 
@@ -54,19 +55,19 @@ export const auth = betterAuth({
         });
 
         if (error) {
-          console.error("Erreur envoi email reset:", error);
+          logger.error("Erreur envoi email reset:", error);
           throw error;
         }
 
-        console.log("✅ Email de reset envoyé:", data?.id);
+        logger.info("✅ Email de reset envoyé:", data?.id);
       } catch (error) {
-        console.error("Erreur critique envoi email:", error);
+        logger.error("Erreur critique envoi email:", error);
         throw error;
       }
     },
 
     onPasswordReset: async ({ user }, request) => {
-      console.log(`✅ Mot de passe réinitialisé pour: ${user.email}`);
+      logger.info(`✅ Mot de passe réinitialisé pour: ${user.email}`);
     },
   },
 
@@ -79,12 +80,12 @@ export const auth = betterAuth({
       sendChangeEmailVerification: async ({ user, newEmail, url, token }, request) => {
         // En développement, toujours afficher le lien dans la console
         if (process.env.NODE_ENV !== "production") {
-          console.log("=".repeat(80));
-          console.log("📧 CHANGEMENT D'EMAIL (DEV MODE)");
-          console.log("Utilisateur:", user.email);
-          console.log("Nouvel email:", newEmail);
-          console.log("Lien de vérification:", url);
-          console.log("=".repeat(80));
+          logger.log("=".repeat(80));
+          logger.log("📧 CHANGEMENT D'EMAIL (DEV MODE)");
+          logger.log("Utilisateur:", user.email);
+          logger.log("Nouvel email:", newEmail);
+          logger.log("Lien de vérification:", url);
+          logger.log("=".repeat(80));
           return; // Ne pas envoyer d'email en dev
         }
 
@@ -102,13 +103,13 @@ export const auth = betterAuth({
           });
 
           if (error) {
-            console.error("Erreur envoi email changement:", error);
+            logger.error("Erreur envoi email changement:", error);
             throw error;
           }
 
-          console.log("✅ Email de changement envoyé à:", newEmail, "- ID:", data?.id);
+          logger.info("✅ Email de changement envoyé à:", newEmail, "- ID:", data?.id);
         } catch (error) {
-          console.error("Erreur critique envoi email:", error);
+          logger.error("Erreur critique envoi email:", error);
           throw error;
         }
       },
@@ -122,11 +123,11 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url, token }, request) => {
       // En développement, toujours afficher le lien dans la console
       if (process.env.NODE_ENV !== "production") {
-        console.log("=".repeat(80));
-        console.log("📧 EMAIL DE VÉRIFICATION (DEV MODE)");
-        console.log("Pour:", user.email);
-        console.log("Lien de vérification:", url);
-        console.log("=".repeat(80));
+        logger.log("=".repeat(80));
+        logger.log("📧 EMAIL DE VÉRIFICATION (DEV MODE)");
+        logger.log("Pour:", user.email);
+        logger.log("Lien de vérification:", url);
+        logger.log("=".repeat(80));
         return; // Ne pas envoyer d'email en dev
       }
 
@@ -143,13 +144,13 @@ export const auth = betterAuth({
         });
 
         if (error) {
-          console.error("Erreur envoi email vérification:", error);
+          logger.error("Erreur envoi email vérification:", error);
           throw error;
         }
 
-        console.log("✅ Email de vérification envoyé:", data?.id);
+        logger.info("✅ Email de vérification envoyé:", data?.id);
       } catch (error) {
-        console.error("Erreur critique envoi email:", error);
+        logger.error("Erreur critique envoi email:", error);
         throw error;
       }
     },

@@ -90,13 +90,13 @@ export const CreateStudySessionSchema = z.object({
 });
 
 export const UpdateStudySessionSchema = z.object({
-  canvasState: z.any().optional(), // JSON
-  editorState: z.any().optional(), // JSON
+  canvasState: z.unknown().optional(), // Prisma Json - accepts any JSON value
+  editorState: z.unknown().optional(), // Prisma Json - accepts any JSON value
 });
 
 export const EndStudySessionSchema = z.object({
-  canvasState: z.any().optional(), // JSON
-  editorState: z.any().optional(), // JSON
+  canvasState: z.unknown().optional(), // Prisma Json - accepts any JSON value
+  editorState: z.unknown().optional(), // Prisma Json - accepts any JSON value
 });
 
 // ============================================
