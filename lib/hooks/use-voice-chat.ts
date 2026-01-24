@@ -16,9 +16,9 @@
  */
 
 import AgoraRTC, {
-  IAgoraRTCClient,
-  IAgoraRTCRemoteUser,
-  IMicrophoneAudioTrack,
+    IAgoraRTCClient,
+    IAgoraRTCRemoteUser,
+    IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -83,119 +83,32 @@ export function useVoiceChat({
   /**
    * Initialise la connexion Agora
    */
-  const connect = useCallback(async () => {
-    if (!sessionId || !enabled) return;
-
-    setIsConnecting(true);
-    setError(null);
-
-    try {
-      // 1. Récupérer le token depuis l'API
-      const { data } = await axios.post("/api/voice/token", { sessionId });
-      const { token, channel, uid, appId } = data.data;
-
-      uidRef.current = uid;
-
-      // Stocker notre propre mapping
-      uidToUserRef.current.set(uid, { odlUserId, odlUserName });
-
-      // 2. Créer le client Agora
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-      clientRef.current = client;
-
-      // 3. Setup des event listeners AVANT de rejoindre
-      client.on(
-        "user-published",
-        async (user: IAgoraRTCRemoteUser, mediaType) => {
-          if (mediaType === "audio") {
-            // S'abonner à l'audio du remote user
-            await client.subscribe(user, mediaType);
-            // Jouer l'audio
-            user.audioTrack?.play();
-
-            // Ajouter aux participants
-            setParticipants((prev) => {
-              const existing = prev.find(
-                (p) => p.odlUserId === String(user.uid)
-              );
-              if (existing) return prev;
-
-              const userInfo = uidToUserRef.current.get(user.uid as number);
-              return [
-                ...prev,
-                {
-                  odlUserId: String(user.uid),
-                  odlUserName: userInfo?.odlUserName || `User ${user.uid}`,
-                  isMuted: false,
-                  isSpeaking: false,
-                },
-              ];
-            });
-          }
-        }
-      );
-
-      client.on("user-unpublished", (user: IAgoraRTCRemoteUser) => {
-        // Retirer des participants quand ils arrêtent de publier
-        setParticipants((prev) =>
-          prev.filter((p) => p.odlUserId !== String(user.uid))
-        );
-      });
-
-      client.on("user-left", (user: IAgoraRTCRemoteUser) => {
-        // Retirer quand ils quittent
-        setParticipants((prev) =>
-          prev.filter((p) => p.odlUserId !== String(user.uid))
-        );
-      });
-
-      // 4. Rejoindre le channel
-      await client.join(appId, channel, token, uid);
-
-      // 5. Créer le track micro local
-      const localTrack = await AgoraRTC.createMicrophoneAudioTrack();
-      localTrackRef.current = localTrack;
-
-      // Muté par défaut
-      localTrack.setEnabled(false);
-
-      // 6. Publier le track
-      await client.publish([localTrack]);
-
-      // Ajouter soi-même aux participants
-      setParticipants([
-        {
-          odlUserId,
-          odlUserName,
-          isMuted: true,
-          isSpeaking: false,
-        },
-      ]);
-
-      setIsConnected(true);
-      console.log("✅ Voice connected to channel:", channel);
-    } catch (err) {
-      console.error("❌ Voice connection error:", err);
-      setError("Impossible de se connecter au voice chat");
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [sessionId, odlUserId, odlUserName, enabled]);
-
   /**
    * Déconnexion propre
    */
   const disconnect = useCallback(async () => {
+    // Capture refs locally to ensure we clean up specific instances
+    const client = clientRef.current;
+    const localTrack = localTrackRef.current;
+
+    // Clear refs immediately to prevent race conditions with new connections
+    clientRef.current = null;
+    localTrackRef.current = null;
+
     // Fermer le track local
-    if (localTrackRef.current) {
-      localTrackRef.current.close();
-      localTrackRef.current = null;
+    if (localTrack) {
+      localTrack.close();
     }
 
     // Quitter le channel
-    if (clientRef.current) {
-      await clientRef.current.leave();
-      clientRef.current = null;
+    if (client) {
+      // D'abord retirer les listeners pour éviter les erreurs pendant le leave
+      client.removeAllListeners();
+      try {
+        await client.leave();
+      } catch (err) {
+        console.error("Error leaving channel:", err);
+      }
     }
 
     setIsConnected(false);
@@ -225,14 +138,138 @@ export function useVoiceChat({
    * Connexion au mount, déconnexion au unmount
    */
   useEffect(() => {
-    if (enabled) {
-      connect();
-    }
+    let isCancelled = false;
+
+    const connect = async () => {
+      if (!sessionId || !enabled) return;
+      
+      setIsConnecting(true);
+      setError(null);
+
+      try {
+        // 1. Récupérer le token depuis l'API
+        const { data } = await axios.post("/api/voice/token", { sessionId });
+        
+        if (isCancelled) return;
+
+        const { token, channel, uid, appId } = data.data;
+
+        uidRef.current = uid;
+        uidToUserRef.current.set(uid, { odlUserId, odlUserName });
+
+        // 2. Créer le client Agora
+        const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        
+        if (isCancelled) return;
+        clientRef.current = client;
+
+        // 3. Setup des event listeners
+        client.on(
+          "user-published",
+          async (user: IAgoraRTCRemoteUser, mediaType) => {
+            if (isCancelled) return;
+            if (mediaType === "audio") {
+              await client.subscribe(user, mediaType);
+              if (isCancelled) return;
+              user.audioTrack?.play();
+
+              setParticipants((prev) => {
+                const existing = prev.find(
+                  (p) => p.odlUserId === String(user.uid)
+                );
+                if (existing) return prev;
+
+                const userInfo = uidToUserRef.current.get(user.uid as number);
+                return [
+                  ...prev,
+                  {
+                    odlUserId: String(user.uid),
+                    odlUserName: userInfo?.odlUserName || `User ${user.uid}`,
+                    isMuted: false,
+                    isSpeaking: false,
+                  },
+                ];
+              });
+            }
+          }
+        );
+
+        client.on("user-unpublished", (user: IAgoraRTCRemoteUser) => {
+          setParticipants((prev) =>
+            prev.filter((p) => p.odlUserId !== String(user.uid))
+          );
+        });
+
+        client.on("user-left", (user: IAgoraRTCRemoteUser) => {
+          setParticipants((prev) =>
+            prev.filter((p) => p.odlUserId !== String(user.uid))
+          );
+        });
+
+        // 4. Rejoindre le channel
+        await client.join(appId, channel, token, uid);
+
+        if (isCancelled) {
+          await client.leave();
+          clientRef.current = null;
+          return;
+        }
+
+        // 5. Créer le track micro local
+        const localTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        
+        if (isCancelled) {
+          localTrack.close();
+          await client.leave();
+          clientRef.current = null;
+          return;
+        }
+
+        localTrackRef.current = localTrack;
+        localTrack.setEnabled(false); // Muté par défaut
+
+        // 6. Publier le track
+        await client.publish([localTrack]);
+
+        if (isCancelled) {
+            // Cleanup si annulé juste après publish
+            localTrack.close();
+            localTrackRef.current = null;
+            await client.leave();
+            clientRef.current = null;
+            return;
+        }
+
+        setParticipants([
+          {
+            odlUserId,
+            odlUserName,
+            isMuted: true,
+            isSpeaking: false,
+          },
+        ]);
+
+        setIsConnected(true);
+        console.log("✅ Voice connected to channel:", channel);
+      } catch (err) {
+        if (!isCancelled) {
+          console.error("❌ Voice connection error:", err);
+          setError("Impossible de se connecter au voice chat");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsConnecting(false);
+        }
+      }
+    };
+
+    connect();
 
     return () => {
+      isCancelled = true;
       disconnect();
     };
-  }, [enabled]); // Ne PAS inclure connect/disconnect pour éviter les reconnexions
+  }, [sessionId, odlUserId, odlUserName, enabled, disconnect]);
 
   return {
     isConnected,

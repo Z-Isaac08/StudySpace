@@ -11,10 +11,10 @@
  */
 
 import { cn } from "@/lib/utils";
+import { useSyncDemo } from "@tldraw/sync";
 import { Loader2, Paintbrush } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tldraw } from "tldraw";
-import { useSyncDemo } from "@tldraw/sync";
 import "tldraw/tldraw.css";
 
 import type { SystemStatus } from "@/lib/hooks/use-connection-orchestrator";
@@ -86,14 +86,82 @@ export function TldrawCanvas({
       onConnectionStatusChange?.("error");
     };
 
-    // tldraw store has events we can listen to
-    // For now, we consider having the store as being connected
-    // In production, you'd want to hook into actual connection events
-
     return () => {
       // Cleanup
     };
   }, [store, onConnectionStatusChange]);
+
+  // Handle custom event to add images from outside
+  const handleMount = (editor: any) => {
+    // Add event listener for adding images
+    const handleAddImage = (e: CustomEvent<{ url: string; name: string; mimeType: string }>) => {
+      const { url, name, mimeType } = e.detail;
+      
+      if (!mimeType.startsWith("image/")) {
+        return; // Only images for now
+      }
+
+      const assetId = `asset:${url}` as any;
+      
+      // Check if asset already exists
+      if (!editor.getAsset(assetId)) {
+        editor.createAssets([
+          {
+            id: assetId,
+            type: "image",
+            typeName: "asset",
+            props: {
+              name: name,
+              src: url,
+              w: 500, // Default width, Tldraw will resize if we knew dimensions
+              h: 500, 
+              mimeType: mimeType,
+              isAnimated: false,
+            },
+            meta: {},
+          },
+        ]);
+      }
+
+      // Create the shape
+      editor.createShapes([
+        {
+          type: "image",
+          x: 100, // Default position
+          y: 100,
+          props: {
+            assetId: assetId,
+            w: 500, 
+            h: 500,
+          },
+        },
+      ]);
+      
+      // Center on the new shape
+      // editor.zoomToSelection(); // Optional
+    };
+
+    window.addEventListener("tldraw-add-image", handleAddImage as EventListener);
+    
+    // Store cleanup function on the editor instance if possible, or just return cleanup for useEffect
+    // But handleMount is a callback.
+    // Better to use a separate useEffect if we had reference to editor.
+    // Since we don't hold editor ref in state, let's attach to window here but we need cleanup.
+    // Tldraw onMount gives us the editor. We should probably store it in a Ref or just use the event listener approach carefully.
+    
+    // We'll attach the listener to the window object and clean it up when the component unmounts
+    // But we need 'editor' in the scope.
+    (window as any)._tldrawAddImageHandler = handleAddImage;
+  };
+
+  useEffect(() => {
+    return () => {
+       if ((window as any)._tldrawAddImageHandler) {
+         window.removeEventListener("tldraw-add-image", (window as any)._tldrawAddImageHandler);
+         delete (window as any)._tldrawAddImageHandler;
+       }
+    };
+  }, []);
 
   // Loading state
   if (isLoading || !store) {
@@ -130,6 +198,7 @@ export function TldrawCanvas({
     >
       <Tldraw
         store={store}
+        onMount={handleMount}
         // Hide UI elements if session ended (read-only feeling)
         hideUi={isEnded}
         // Tldraw handles its own persistence via the sync store

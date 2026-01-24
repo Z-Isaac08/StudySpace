@@ -1,17 +1,18 @@
 "use client";
 
-import { useFiles } from "@/lib/hooks/use-files";
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useFiles } from "@/lib/hooks/use-files";
+import { cn } from "@/lib/utils";
 import {
+  ExternalLink,
   FileText,
+  FolderOpen,
   Image as ImageIcon,
   Loader2,
+  Monitor,
   X,
-  FolderOpen,
-  ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 interface SessionFilesPanelProps {
   workspaceId: string;
@@ -69,14 +70,19 @@ export function SessionFilesPanel({
             {files.map((file) => {
               const isImage = file.mimeType.startsWith("image/");
               return (
-                <a
+                <div
                   key={file.id}
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => window.open(file.url, "_blank")}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      window.open(file.url, "_blank");
+                    }
+                  }}
                   className={cn(
                     "w-full flex items-center gap-3 p-2 rounded-md text-left text-sm",
-                    "hover:bg-accent transition-colors group"
+                    "hover:bg-accent transition-colors group cursor-pointer"
                   )}
                 >
                   {/* Thumbnail for images */}
@@ -104,8 +110,35 @@ export function SessionFilesPanel({
                       {file.mimeType.split("/")[1]?.toUpperCase() || "FILE"}
                     </p>
                   </div>
+
+                  {/* Add to Board Button (Images only) */}
+                  {isImage && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Ajouter au tableau blanc"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent opening the file
+                        
+                        window.dispatchEvent(
+                          new CustomEvent("tldraw-add-image", {
+                            detail: {
+                              url: file.url,
+                              name: file.name,
+                              mimeType: file.mimeType,
+                            },
+                          })
+                        );
+                        
+                        // Close panel on mobile if needed, or visual feedback
+                      }}
+                    >
+                      <Monitor className="h-4 w-4" />
+                    </Button>
+                  )}
                   <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
+                </div>
               );
             })}
           </div>
