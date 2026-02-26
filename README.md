@@ -2,7 +2,7 @@
 
 **Plateforme d'étude collaborative moderne pour étudiants.**
 
-StudySpace permet à des groupes d'étudiants de travailler ensemble comme s'ils étaient dans la même salle : espaces de travail partagés, sessions d'étude collaboratives, tableau blanc interactif, notes partagées, et gestion de fichiers.
+StudySpace permet à des groupes d'étudiants de travailler ensemble comme s'ils étaient dans la même salle : espaces de travail partagés, sessions d'étude collaboratives, tableau blanc interactif, audio temps réel, et gestion de fichiers.
 
 ---
 
@@ -51,6 +51,20 @@ StudySpace permet à des groupes d'étudiants de travailler ensemble comme s'ils
 - Sauvegarde de l'état de l'éditeur
 - Historique des sessions par workspace
 
+### 🎙️ Audio Temps Réel (Agora)
+
+- Canaux audio par workspace
+- Mute/unmute individuel
+- Indicateurs visuels de parole
+- Intégration Agora RTC SDK
+
+### 📁 Gestion de Fichiers
+
+- Upload de fichiers dans un workspace (Vercel Blob)
+- Téléchargement et prévisualisation
+- Gestion des permissions par workspace
+- Support multi-formats (PDF, images, documents)
+
 ### 👤 Profil & Paramètres
 
 - Page de profil avec statistiques (workspaces, sessions, fichiers)
@@ -92,7 +106,8 @@ StudySpace permet à des groupes d'étudiants de travailler ensemble comme s'ils
 - **ORM** : Prisma 7.0.1 avec @prisma/adapter-pg 6.0.1
 - **Authentification** : Better Auth 1.4.9 avec Prisma adapter
 - **Temps réel** : Pusher (WebSocket)
-- **Storage** : Vercel Blob
+- **Audio** : Agora RTC SDK (canaux audio par workspace)
+- **Storage** : Vercel Blob (gestion de fichiers)
 - **Email** : Resend 6.6.0 + React Email 5.1.0
 - **Validation** : Zod 4.1.13
 
@@ -178,6 +193,7 @@ BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 ```
 
 ⚠️ **Important** :
+
 - `.env.local` ne doit jamais être commité
 - En développement, les emails de vérification sont affichés dans la console au lieu d'être envoyés
 - `RESEND_API_KEY` est optionnel en développement mais requis en production
@@ -207,21 +223,24 @@ Le projet utilise Prisma avec PostgreSQL. Les modèles principaux sont :
 - **Workspace** : Espaces de travail
 - **WorkspaceMember** : Membres des workspaces (relation User ↔ Workspace)
 - **StudySession** : Sessions d'étude
-- **File** : Fichiers partagés (prévu pour future implémentation)
+- **File** : Fichiers partagés dans les workspaces (Vercel Blob)
 
 ### Initialiser la base de données
 
 1. **Générer le client Prisma** :
+
 ```bash
 npx prisma generate
 ```
 
 2. **Créer les tables** :
+
 ```bash
 npx prisma db push
 ```
 
 3. **Ouvrir Prisma Studio** (optionnel) :
+
 ```bash
 npx prisma studio
 ```
@@ -229,11 +248,13 @@ npx prisma studio
 ### Migrations
 
 Les migrations sont dans `prisma/migrations/` :
+
 - `20251224114636_init` : Schéma initial
 - `20251224122708_add_auth_models` : Modèles Better Auth
 - `20251224161324_better_auth_integration` : Intégration complète
 
 Pour créer une nouvelle migration :
+
 ```bash
 npx prisma migrate dev --name nom_de_la_migration
 ```
@@ -397,6 +418,16 @@ Tous les endpoints d'authentification sont gérés par Better Auth via `/api/aut
 - `POST /api/sessions/[id]/end` - Terminer une session
 - `PUT /api/sessions/[id]` - Modifier une session
 
+### Endpoints Fichiers
+
+- `GET /api/files?workspaceId=...` - Fichiers d'un workspace
+- `POST /api/files` - Uploader un fichier (multipart/form-data)
+- `DELETE /api/files/[id]` - Supprimer un fichier
+
+### Endpoints Audio (Agora)
+
+- `POST /api/agora/token` - Générer un token RTC pour rejoindre un canal
+
 ### Health Check
 
 - `GET /api/health` - Vérifier l'état de l'API et de la DB
@@ -432,6 +463,7 @@ npx shadcn@latest add <component>  # Ajouter un composant
 ### Vercel (recommandé)
 
 1. **Push sur GitHub** :
+
 ```bash
 git push origin main
 ```
@@ -447,6 +479,7 @@ git push origin main
    - Ajoutez `RESEND_API_KEY` pour l'envoi d'emails en production
 
 4. **Déployer** :
+
 ```bash
 vercel --prod
 ```
@@ -454,9 +487,11 @@ vercel --prod
 ### Configuration de la base de données
 
 Pour la production, vous devez :
+
 1. Créer une base de données PostgreSQL (Neon, Supabase, Railway, etc.)
 2. Copier la `DATABASE_URL`
 3. Exécuter les migrations :
+
 ```bash
 npx prisma migrate deploy
 ```
@@ -512,10 +547,13 @@ npx prisma migrate deploy
 - [Zustand](https://zustand-demo.pmnd.rs) - Gestion d'état
 - [Zod](https://zod.dev) - Validation de schémas
 - [React Hook Form](https://react-hook-form.com) - Gestion de formulaires
+- [Agora RTC SDK](https://docs.agora.io/en/voice-calling/get-started/get-started-sdk) - Audio temps réel
+- [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) - Stockage de fichiers
+- [Pusher](https://pusher.com/docs) - WebSocket temps réel
 
 ### Ressources
 
-- [CLAUDE.md](./CLAUDE.md) - Instructions détaillées pour le développement
+- [DEVELOPMENT.md](./docs/DEVELOPMENT.md) - Guide de développement
 - [.env.example](./.env.example) - Exemple de variables d'environnement
 
 ---
@@ -551,7 +589,7 @@ MIT - Voir le fichier [LICENSE](./LICENSE) pour plus de détails.
 Pour toute question ou problème :
 
 - **Issues** : [GitHub Issues](https://github.com/votre-username/studyspace/issues)
-- **Documentation** : [CLAUDE.md](./CLAUDE.md)
+- **Documentation** : [DEVELOPMENT.md](./docs/DEVELOPMENT.md)
 
 ---
 

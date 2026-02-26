@@ -1,35 +1,35 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { toast } from "sonner";
+import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
 
-import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
-import { FloatingSessionHeader } from "@/components/session/FloatingSessionHeader";
-import { ConnectionStatusBanner } from "@/components/session/ConnectionStatusBanner";
-import { PrivateNotesEditor } from "@/components/session/PrivateNotesEditor";
-import { SessionFilesPanel } from "@/components/session/SessionFilesPanel";
-import { Button } from "@/components/ui/button";
+import { CollaborativeEditor } from '@/components/editor/CollaborativeEditor';
+import { ConnectionStatusBanner } from '@/components/session/ConnectionStatusBanner';
+import { FloatingSessionHeader } from '@/components/session/FloatingSessionHeader';
+import { PostSessionSummary } from '@/components/session/PostSessionSummary';
+import { PrivateNotesEditor } from '@/components/session/PrivateNotesEditor';
+import { SessionFilesPanel } from '@/components/session/SessionFilesPanel';
+import { Button } from '@/components/ui/button';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { useConfirm } from '@/lib/hooks/use-confirm';
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { useAuth } from "@/lib/hooks/use-auth";
-import { useConfirm } from "@/lib/hooks/use-confirm";
-import { useStudySession } from "@/lib/hooks/use-study-session";
-import { useConnectionOrchestrator, type SystemStatus } from "@/lib/hooks/use-connection-orchestrator";
-import { useSessionPresence } from "@/lib/hooks/use-session-presence";
-import { useVoiceChat } from "@/lib/hooks/use-voice-chat";
-import { getPusherClient } from "@/lib/pusher/client";
-import { cn } from "@/lib/utils";
-import { Loader2, NotebookPen, Paintbrush, Type, X } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
-import type { Channel } from "pusher-js";
-import { useCallback, useEffect, useState } from "react";
+  useConnectionOrchestrator,
+  type SystemStatus,
+} from '@/lib/hooks/use-connection-orchestrator';
+import { useSessionPresence } from '@/lib/hooks/use-session-presence';
+import { useStudySession } from '@/lib/hooks/use-study-session';
+import { useVoiceChat } from '@/lib/hooks/use-voice-chat';
+import { getPusherClient } from '@/lib/pusher/client';
+import { cn } from '@/lib/utils';
+import { Loader2, NotebookPen, Paintbrush, Type, X } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import type { Channel } from 'pusher-js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Dynamic import for TldrawCanvas to avoid SSR issues
 const TldrawCanvas = dynamic(
-  () => import("@/components/canvas/TldrawCanvas").then((mod) => mod.TldrawCanvas),
+  () => import('@/components/canvas/TldrawCanvas').then(mod => mod.TldrawCanvas),
   {
     ssr: false,
     loading: () => (
@@ -46,49 +46,49 @@ const TldrawCanvas = dynamic(
 // Tag colors for panel accents
 const tagPanelColors: Record<string, { border: string; header: string; icon: string }> = {
   maths: {
-    border: "border-tag-maths/30",
-    header: "border-b-tag-maths/30",
-    icon: "text-tag-maths",
+    border: 'border-tag-maths/30',
+    header: 'border-b-tag-maths/30',
+    icon: 'text-tag-maths',
   },
   info: {
-    border: "border-tag-info/30",
-    header: "border-b-tag-info/30",
-    icon: "text-tag-info",
+    border: 'border-tag-info/30',
+    header: 'border-b-tag-info/30',
+    icon: 'text-tag-info',
   },
   physique: {
-    border: "border-tag-physique/30",
-    header: "border-b-tag-physique/30",
-    icon: "text-tag-physique",
+    border: 'border-tag-physique/30',
+    header: 'border-b-tag-physique/30',
+    icon: 'text-tag-physique',
   },
   chimie: {
-    border: "border-tag-chimie/30",
-    header: "border-b-tag-chimie/30",
-    icon: "text-tag-chimie",
+    border: 'border-tag-chimie/30',
+    header: 'border-b-tag-chimie/30',
+    icon: 'text-tag-chimie',
   },
   svt: {
-    border: "border-success/30",
-    header: "border-b-success/30",
-    icon: "text-success",
+    border: 'border-success/30',
+    header: 'border-b-success/30',
+    icon: 'text-success',
   },
   langues: {
-    border: "border-tag-langues/30",
-    header: "border-b-tag-langues/30",
-    icon: "text-tag-langues",
+    border: 'border-tag-langues/30',
+    header: 'border-b-tag-langues/30',
+    icon: 'text-tag-langues',
   },
   droit: {
-    border: "border-tag-droit/30",
-    header: "border-b-tag-droit/30",
-    icon: "text-tag-droit",
+    border: 'border-tag-droit/30',
+    header: 'border-b-tag-droit/30',
+    icon: 'text-tag-droit',
   },
   general: {
-    border: "border-tag-general/30",
-    header: "border-b-tag-general/30",
-    icon: "text-tag-general",
+    border: 'border-tag-general/30',
+    header: 'border-b-tag-general/30',
+    icon: 'text-tag-general',
   },
   autre: {
-    border: "border-neutral-300",
-    header: "border-b-neutral-300",
-    icon: "text-neutral-500",
+    border: 'border-neutral-300',
+    header: 'border-b-neutral-300',
+    icon: 'text-neutral-500',
   },
 };
 
@@ -114,11 +114,21 @@ export default function SessionPage() {
 
   const { confirm, ConfirmationDialog } = useConfirm();
 
-  const [editorContent, setEditorContent] = useState("");
+  const [editorContent, setEditorContent] = useState('');
   const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFilesOpen, setIsFilesOpen] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Compute word count from editor HTML content
+  const wordCount = useMemo(() => {
+    if (!editorContent) return 0;
+    // Strip HTML tags, then count whitespace-separated words
+    const text = editorContent.replace(/<[^>]*>/g, ' ').trim();
+    if (!text) return 0;
+    return text.split(/\s+/).filter(Boolean).length;
+  }, [editorContent]);
 
   // Connection orchestrator for coordinating Pusher and Tldraw connections
   const {
@@ -139,7 +149,7 @@ export default function SessionPage() {
     isConnected: isPresenceConnected,
   } = useSessionPresence({
     pusherChannel,
-    currentUserId: user?.id || "",
+    currentUserId: user?.id || '',
   });
 
   // Voice chat - auto-connects when session is active
@@ -151,8 +161,8 @@ export default function SessionPage() {
     toggleMute: toggleVoiceMute,
   } = useVoiceChat({
     sessionId,
-    odlUserId: user?.id || "",
-    odlUserName: user?.name || "Anonyme",
+    odlUserId: user?.id || '',
+    odlUserName: user?.name || 'Anonyme',
     enabled: !!user && !!currentStudySession && !currentStudySession.endedAt,
   });
 
@@ -176,11 +186,11 @@ export default function SessionPage() {
 
   // Location callbacks - update presence when user focuses editor or canvas
   const handleEditorFocus = useCallback(() => {
-    setMyLocation("editor");
+    setMyLocation('editor');
   }, [setMyLocation]);
 
   const handleCanvasFocus = useCallback(() => {
-    setMyLocation("canvas");
+    setMyLocation('canvas');
   }, [setMyLocation]);
 
   // Load session on mount
@@ -194,28 +204,30 @@ export default function SessionPage() {
 
   // Pusher connection for real-time collaboration (entire session)
   useEffect(() => {
-    if (typeof window === "undefined" || !user || !currentStudySession) return;
+    if (typeof window === 'undefined' || !user || !currentStudySession) return;
     if (currentStudySession.endedAt) return; // Don't connect if session ended
 
     const pusher = getPusherClient();
     const channelName = `presence-session-${sessionId}`;
     const channel = pusher.subscribe(channelName);
 
-    channel.bind("pusher:subscription_succeeded", () => {
-      console.log("✅ Session connected to Pusher");
+    channel.bind('pusher:subscription_succeeded', () => {
+      console.log('✅ Session connected to Pusher');
       setPusherChannel(channel);
-      setPusherStatus("connected");
+      setPusherStatus('connected');
     });
 
     // Listen for session terminated event (server event, no "client-" prefix)
-    channel.bind("session-terminated", () => {
-      toast.info("La session a été terminée");
-      router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+    channel.bind('session-terminated', () => {
+      toast.info('La session a été terminée');
+      // Re-fetch so isEnded becomes true, then show summary
+      fetchStudySession(sessionId);
+      setShowSummary(true);
     });
 
-    channel.bind("pusher:subscription_error", () => {
-      console.error("❌ Failed to connect session to Pusher");
-      setPusherStatus("error");
+    channel.bind('pusher:subscription_error', () => {
+      console.error('❌ Failed to connect session to Pusher');
+      setPusherStatus('error');
     });
 
     // Cleanup
@@ -230,7 +242,10 @@ export default function SessionPage() {
     if (!currentStudySession) return;
 
     // Restore editor state
-    if (currentStudySession.editorState?.content && typeof currentStudySession.editorState.content === "string") {
+    if (
+      currentStudySession.editorState?.content &&
+      typeof currentStudySession.editorState.content === 'string'
+    ) {
       setEditorContent(currentStudySession.editorState.content);
     }
     // Note: Canvas state is now handled by tldraw sync - no need to restore manually
@@ -240,7 +255,7 @@ export default function SessionPage() {
   const handleManualSave = async () => {
     if (!currentStudySession) return;
     // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
-    toast.success("Session sauvegardée");
+    toast.success('Session sauvegardée');
   };
 
   // Quit session (leave without terminating for others)
@@ -250,11 +265,11 @@ export default function SessionPage() {
     // Check if you're the last member - if so, should terminate instead
     if (members.length <= 1) {
       const confirmed = await confirm({
-        title: "Dernière personne dans la session",
+        title: 'Dernière personne dans la session',
         description:
-          "Vous êtes la dernière personne dans cette session. La quitter va la terminer automatiquement. Continuer ?",
-        confirmText: "Terminer la session",
-        variant: "destructive",
+          'Vous êtes la dernière personne dans cette session. La quitter va la terminer automatiquement. Continuer ?',
+        confirmText: 'Terminer la session',
+        variant: 'destructive',
       });
 
       if (!confirmed) return;
@@ -265,11 +280,11 @@ export default function SessionPage() {
     }
 
     const confirmed = await confirm({
-      title: "Quitter la session",
+      title: 'Quitter la session',
       description:
-        "Voulez-vous quitter la session ? Les autres membres pourront continuer à travailler.",
-      confirmText: "Quitter",
-      variant: "default",
+        'Voulez-vous quitter la session ? Les autres membres pourront continuer à travailler.',
+      confirmText: 'Quitter',
+      variant: 'default',
     });
 
     if (!confirmed) return;
@@ -277,11 +292,11 @@ export default function SessionPage() {
     try {
       // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
       // Don't end session, just navigate away
-      toast.info("Vous avez quitté la session");
+      toast.info('Vous avez quitté la session');
       router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
     } catch (error) {
-      console.error("Error quitting session:", error);
-      toast.error("Erreur lors de la sortie de la session");
+      console.error('Error quitting session:', error);
+      toast.error('Erreur lors de la sortie de la session');
     }
   };
 
@@ -292,11 +307,11 @@ export default function SessionPage() {
     // Ask confirmation if manual termination
     if (!isAutoTerminate) {
       const confirmed = await confirm({
-        title: "Terminer la session",
+        title: 'Terminer la session',
         description:
           "Cela va terminer la session pour tous les membres. L'état actuel sera sauvegardé. Continuer ?",
-        confirmText: "Terminer",
-        variant: "destructive",
+        confirmText: 'Terminer',
+        variant: 'destructive',
       });
 
       if (!confirmed) return;
@@ -313,38 +328,34 @@ export default function SessionPage() {
       // Broadcast termination to all members via server
       if (!isAutoTerminate) {
         const channelName = `presence-session-${sessionId}`;
-        await broadcastEvent(channelName, "session-terminated", {
+        await broadcastEvent(channelName, 'session-terminated', {
           odlUserId: user?.id,
         });
       }
 
       toast.success(
-        isAutoTerminate
-          ? "Session terminée automatiquement"
-          : "Session terminée avec succès"
+        isAutoTerminate ? 'Session terminée automatiquement' : 'Session terminée avec succès'
       );
 
-      router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`);
+      // Re-fetch session so isEnded becomes true, then show summary
+      await fetchStudySession(sessionId);
+      setShowSummary(true);
     } catch (error) {
-      console.error("Failed to terminate session:", error);
-      toast.error("Erreur lors de la terminaison de la session");
+      console.error('Failed to terminate session:', error);
+      toast.error('Erreur lors de la terminaison de la session');
     }
   };
 
   // Calculate session duration
   const getDuration = () => {
-    if (!currentStudySession) return "0:00";
+    if (!currentStudySession) return '0:00';
     const start = new Date(currentStudySession.startedAt);
-    const end = currentStudySession.endedAt
-      ? new Date(currentStudySession.endedAt)
-      : new Date();
+    const end = currentStudySession.endedAt ? new Date(currentStudySession.endedAt) : new Date();
     const diffMs = end.getTime() - start.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
-    return hours > 0
-      ? `${hours}h${mins.toString().padStart(2, "0")}`
-      : `${mins}min`;
+    return hours > 0 ? `${hours}h${mins.toString().padStart(2, '0')}` : `${mins}min`;
   };
 
   if (isLoading || !currentStudySession) {
@@ -352,39 +363,39 @@ export default function SessionPage() {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">
-            Chargement de la session...
-          </p>
+          <p className="mt-4 text-muted-foreground">Chargement de la session...</p>
         </div>
       </div>
     );
   }
 
   const isEnded = !!currentStudySession.endedAt;
-  const workspaceTag = currentStudySession.workspace?.tag || "autre";
+  const workspaceTag = currentStudySession.workspace?.tag || 'autre';
   const panelColors = tagPanelColors[workspaceTag] || tagPanelColors.autre;
 
   return (
     <>
       <ConfirmationDialog />
       <div className="relative flex h-screen flex-col overflow-hidden">
-        {/* Connection Status Banner */}
-        <ConnectionStatusBanner
-          globalStatus={globalStatus}
-          partialReason={partialReason}
-          browserOnline={browserOnline}
-          onRetry={handleRetryAll}
-          isRetrying={isRetrying}
-        />
+        {/* Connection Status Banner — hidden for ended sessions */}
+        {!isEnded && (
+          <ConnectionStatusBanner
+            globalStatus={globalStatus}
+            partialReason={partialReason}
+            browserOnline={browserOnline}
+            onRetry={handleRetryAll}
+            isRetrying={isRetrying}
+          />
+        )}
 
         {/* Floating Header */}
         <FloatingSessionHeader
           workspaceId={currentStudySession.workspaceId}
-          workspaceName={currentStudySession.workspace?.name || "Session"}
+          workspaceName={currentStudySession.workspace?.name || 'Session'}
           workspaceTag={currentStudySession.workspace?.tag}
           duration={getDuration()}
           members={members}
-          currentUserId={user?.id || ""}
+          currentUserId={user?.id || ''}
           isEnded={isEnded}
           isSaving={isSaving}
           isEnding={isEnding}
@@ -393,8 +404,8 @@ export default function SessionPage() {
           onSave={handleManualSave}
           onQuit={handleQuitSession}
           onTerminate={() => handleTerminateSession(false)}
-          onToggleNotes={() => setIsNotesOpen((prev) => !prev)}
-          onToggleFiles={() => setIsFilesOpen((prev) => !prev)}
+          onToggleNotes={() => setIsNotesOpen(prev => !prev)}
+          onToggleFiles={() => setIsFilesOpen(prev => !prev)}
           // Voice chat props
           voiceConnected={voiceConnected}
           voiceConnecting={voiceConnecting}
@@ -405,103 +416,116 @@ export default function SessionPage() {
 
         {/* Main content - Split-screen layout */}
         <div className="flex flex-1 overflow-hidden pt-14 px-2 pb-2">
-          <div className={cn(
-            "flex-1 transition-all duration-300",
-            isNotesOpen ? "mr-80" : ""
-          )}>
+          <div className={cn('flex-1 transition-all duration-300', isNotesOpen ? 'mr-80' : '')}>
             <ResizablePanelGroup orientation="horizontal" className="h-full">
-            {/* Canvas Panel - 60% */}
-            <ResizablePanel defaultSize={60} minSize={30}>
-              <div className={cn(
-                "relative h-full rounded-lg border-2 bg-card overflow-hidden",
-                panelColors.border,
-                !isCanvasEnabled && "opacity-50"
-              )}>
-                {/* Canvas Header */}
-                <div className={cn(
-                  "flex items-center justify-between px-3 py-2 border-b",
-                  panelColors.header
-                )}>
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Paintbrush className={cn("h-4 w-4", panelColors.icon)} />
-                    <span className="text-muted-foreground">Canvas collaboratif</span>
+              {/* Canvas Panel - 60% */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <div
+                  className={cn(
+                    'relative h-full rounded-lg border-2 bg-card overflow-hidden',
+                    panelColors.border,
+                    !isCanvasEnabled && 'opacity-50'
+                  )}
+                >
+                  {/* Canvas Header */}
+                  <div
+                    className={cn(
+                      'flex items-center justify-between px-3 py-2 border-b',
+                      panelColors.header
+                    )}
+                  >
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Paintbrush className={cn('h-4 w-4', panelColors.icon)} />
+                      <span className="text-muted-foreground">Canvas collaboratif</span>
+                    </div>
+                    {/* Tldraw has its own toolbar, no need for custom buttons */}
                   </div>
-                  {/* Tldraw has its own toolbar, no need for custom buttons */}
+                  {/* Canvas Area - TldrawCanvas */}
+                  <div className="relative h-[calc(100%-2.5rem)]">
+                    {user && (
+                      <TldrawCanvas
+                        sessionId={sessionId}
+                        userId={user.id}
+                        userName={user.name}
+                        onConnectionStatusChange={handleTldrawConnectionChange}
+                        onFocus={handleCanvasFocus}
+                        isEnded={isEnded}
+                        isEnabled={isCanvasEnabled}
+                        panelColors={panelColors}
+                      />
+                    )}
+                  </div>
                 </div>
-                {/* Canvas Area - TldrawCanvas */}
-                <div className="relative h-[calc(100%-2.5rem)]">
-                  {user && (
-                    <TldrawCanvas
-                      sessionId={sessionId}
-                      userId={user.id}
-                      userName={user.name}
-                      onConnectionStatusChange={handleTldrawConnectionChange}
-                      onFocus={handleCanvasFocus}
-                      isEnded={isEnded}
-                      isEnabled={isCanvasEnabled}
-                      panelColors={panelColors}
-                    />
-                  )}
-                </div>
-              </div>
-            </ResizablePanel>
+              </ResizablePanel>
 
-            <ResizableHandle withHandle />
+              <ResizableHandle withHandle />
 
-            {/* Editor Panel - 40% */}
-            <ResizablePanel defaultSize={40} minSize={25}>
-              <div className={cn(
-                "relative h-full rounded-lg border-2 bg-card p-1",
-                panelColors.border,
-                !isEditorEnabled && "opacity-50 pointer-events-none"
-              )}>
-                {/* Editor Header */}
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 border-b text-sm font-medium",
-                  panelColors.header
-                )}>
-                  <Type className={cn("h-4 w-4", panelColors.icon)} />
-                  <span className="text-muted-foreground">Éditeur collaboratif</span>
-                </div>
-                {/* Editor Area */}
-                <div className="h-[calc(100%-2.5rem)] overflow-hidden">
-                  {user && (
-                    <CollaborativeEditor
-                      sessionId={sessionId}
-                      userId={user.id}
-                      userName={user.name}
-                      initialContent={editorContent}
-                      pusherChannel={pusherChannel}
-                      onFocus={handleEditorFocus}
-                      onSave={async (content) => {
-                        setEditorContent(content);
-                        await updateStudySession(sessionId, {
-                          editorState: { content },
-                        });
-                      }}
-                    />
+              {/* Editor Panel - 40% */}
+              <ResizablePanel defaultSize={40} minSize={25}>
+                <div
+                  className={cn(
+                    'relative h-full rounded-lg border-2 bg-card p-1',
+                    panelColors.border,
+                    !isEditorEnabled && 'opacity-50 pointer-events-none'
                   )}
+                >
+                  {/* Editor Header */}
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 border-b text-sm font-medium',
+                      panelColors.header
+                    )}
+                  >
+                    <Type className={cn('h-4 w-4', panelColors.icon)} />
+                    <span className="text-muted-foreground">Éditeur collaboratif</span>
+                  </div>
+                  {/* Editor Area */}
+                  <div className="h-[calc(100%-2.5rem)] overflow-hidden">
+                    {user && (
+                      <CollaborativeEditor
+                        sessionId={sessionId}
+                        userId={user.id}
+                        userName={user.name}
+                        initialContent={editorContent}
+                        // Never pass a live channel to an ended session
+                        pusherChannel={isEnded ? null : pusherChannel}
+                        isReadOnly={isEnded}
+                        onFocus={isEnded ? undefined : handleEditorFocus}
+                        onSave={
+                          isEnded
+                            ? undefined
+                            : async content => {
+                                setEditorContent(content);
+                                await updateStudySession(sessionId, {
+                                  editorState: { content },
+                                });
+                              }
+                        }
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </ResizablePanel>
+              </ResizablePanel>
             </ResizablePanelGroup>
           </div>
 
           {/* Notes Sidebar */}
           <div
             className={cn(
-              "fixed right-0 top-14 bottom-0 w-80 border-l bg-card shadow-xl",
-              "transform transition-transform duration-300 ease-in-out",
-              isNotesOpen ? "translate-x-0" : "translate-x-full"
+              'fixed right-0 top-14 bottom-0 w-80 border-l bg-card shadow-xl',
+              'transform transition-transform duration-300 ease-in-out',
+              isNotesOpen ? 'translate-x-0' : 'translate-x-full'
             )}
           >
             {/* Sidebar Header */}
-            <div className={cn(
-              "flex items-center justify-between px-4 py-3 border-b",
-              panelColors.header
-            )}>
+            <div
+              className={cn(
+                'flex items-center justify-between px-4 py-3 border-b',
+                panelColors.header
+              )}
+            >
               <div className="flex items-center gap-2 text-sm font-medium">
-                <NotebookPen className={cn("h-4 w-4", panelColors.icon)} />
+                <NotebookPen className={cn('h-4 w-4', panelColors.icon)} />
                 <span className="text-muted-foreground">Mes notes</span>
               </div>
               <Button
@@ -515,9 +539,7 @@ export default function SessionPage() {
             </div>
             {/* Notes Editor */}
             <div className="h-[calc(100%-3.5rem)]">
-              {isNotesOpen && (
-                <PrivateNotesEditor sessionId={sessionId} />
-              )}
+              {isNotesOpen && <PrivateNotesEditor sessionId={sessionId} />}
             </div>
           </div>
 
@@ -528,6 +550,21 @@ export default function SessionPage() {
             onClose={() => setIsFilesOpen(false)}
           />
         </div>
+
+        {/* Post-Session Summary Overlay */}
+        {isEnded && showSummary && (
+          <PostSessionSummary
+            workspaceName={currentStudySession.workspace?.name || 'Session'}
+            workspaceTag={workspaceTag}
+            duration={getDuration()}
+            memberCount={Math.max(members.length, 1)}
+            wordCount={wordCount}
+            onViewReadOnly={() => setShowSummary(false)}
+            onBackToWorkspace={() =>
+              router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`)
+            }
+          />
+        )}
       </div>
     </>
   );

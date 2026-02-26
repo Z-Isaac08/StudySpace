@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
 /**
  * useCollaborativeEditor Hook
  * Orchestrates all collaborative editing functionality
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import * as Y from "yjs";
-import { Awareness } from "y-protocols/awareness";
-import type { Channel } from "pusher-js";
 import type {
-  SyncStatus,
-  CollaborationUser,
   CollaborationProvider,
-} from "@/lib/types/collaboration";
-import { COLLABORATION_CONFIG } from "@/lib/types/collaboration";
-import { createYjsDocument, destroyDocument } from "@/lib/yjs/create-document";
-import { setAwarenessUser } from "@/lib/yjs/awareness";
-import { toUint8Array, toNumberArray, getUserColor } from "@/lib/yjs/utils";
-import { PusherProvider } from "@/lib/yjs/pusher-provider";
-import { useConnectionStatus } from "./use-connection-status";
+  CollaborationUser,
+  SyncStatus,
+} from '@/lib/types/collaboration';
+import { COLLABORATION_CONFIG } from '@/lib/types/collaboration';
+import { setAwarenessUser } from '@/lib/yjs/awareness';
+import { createYjsDocument, destroyDocument } from '@/lib/yjs/create-document';
+import { PusherProvider } from '@/lib/yjs/pusher-provider';
+import { getUserColor, toNumberArray, toUint8Array } from '@/lib/yjs/utils';
+import type { Channel } from 'pusher-js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Awareness } from 'y-protocols/awareness';
+import * as Y from 'yjs';
+import { useConnectionStatus } from './use-connection-status';
 
 interface UseCollaborativeEditorOptions {
   sessionId: string;
@@ -29,6 +29,8 @@ interface UseCollaborativeEditorOptions {
   broadcastEvent: (channel: string, event: string, data: unknown) => Promise<boolean>;
   fetchYjsState: (sessionId: string) => Promise<number[] | null>;
   saveYjsState: (sessionId: string, state: number[]) => Promise<void>;
+  /** When true: load content from DB but skip Pusher, auto-save, and awareness */
+  isReadOnly?: boolean;
 }
 
 interface UseCollaborativeEditorReturn {
@@ -51,12 +53,13 @@ export function useCollaborativeEditor({
   broadcastEvent,
   fetchYjsState,
   saveYjsState,
+  isReadOnly = false,
 }: UseCollaborativeEditorOptions): UseCollaborativeEditorReturn {
   // Core state - use state so changes trigger re-render for TipTap
   const [ydoc, setYdoc] = useState<Y.Doc | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   // Refs for cleanup and internal access
@@ -85,18 +88,20 @@ export function useCollaborativeEditor({
   }, [broadcastEvent]);
 
   // Connection status
-  const { isOnline, setStatus, setLastSyncedAt: setConnectionLastSynced } =
-    useConnectionStatus();
+  const { isOnline, setStatus, setLastSyncedAt: setConnectionLastSynced } = useConnectionStatus();
 
   // User color (deterministic)
   const userColor = useMemo(() => getUserColor(userId), [userId]);
 
   // Create user object (memoized)
-  const user: CollaborationUser = useMemo(() => ({
-    id: userId,
-    name: userName,
-    color: userColor,
-  }), [userId, userName, userColor]);
+  const user: CollaborationUser = useMemo(
+    () => ({
+      id: userId,
+      name: userName,
+      color: userColor,
+    }),
+    [userId, userName, userColor]
+  );
 
   // Initialize Yjs document and load state - only once per sessionId
   useEffect(() => {
@@ -112,25 +117,36 @@ export function useCollaborativeEditor({
       ydocRef.current = newYdoc;
       awarenessRef.current = newAwareness;
 
-      // Set user in awareness with deterministic color
-      setAwarenessUser(newAwareness, user, "online");
+      // Only set awareness for live sessions
+      if (!isReadOnly) {
+        setAwarenessUser(newAwareness, user, 'online');
+      }
 
-      // Load initial state
+      // Load state from database
       try {
         const initialState = await fetchYjsStateRef.current(sessionId);
         if (initialState && initialState.length > 0) {
           const update = toUint8Array(initialState);
           Y.applyUpdate(newYdoc, update);
-          console.log("📥 Loaded Yjs state from database");
+          console.log(
+            isReadOnly
+              ? '📖 Loaded archived Yjs state (read-only)'
+              : '📥 Loaded Yjs state from database'
+          );
         }
       } catch (error) {
-        console.error("Failed to load initial Yjs state:", error);
+        console.error('Failed to load initial Yjs state:', error);
       }
 
       // Update state to trigger re-render
       setYdoc(newYdoc);
       setAwareness(newAwareness);
       setIsLoaded(true);
+
+      // In read-only mode we are always "synced" (no live connection)
+      if (isReadOnly) {
+        setSyncStatus('synced');
+      }
     };
 
     init();
@@ -140,14 +156,16 @@ export function useCollaborativeEditor({
       isInitializedRef.current = false;
 
       if (ydocRef.current && awarenessRef.current) {
-        // Save state before destroying
-        const state = Y.encodeStateAsUpdate(ydocRef.current);
-        saveYjsStateRef.current(sessionId, toNumberArray(state)).catch(console.error);
+        // Only save on cleanup for live sessions
+        if (!isReadOnly) {
+          const state = Y.encodeStateAsUpdate(ydocRef.current);
+          saveYjsStateRef.current(sessionId, toNumberArray(state)).catch(console.error);
+        }
 
         destroyDocument({
           ydoc: ydocRef.current,
           awareness: awarenessRef.current,
-          content: ydocRef.current.getXmlFragment("default"),
+          content: ydocRef.current.getXmlFragment('default'),
         });
       }
 
@@ -157,11 +175,11 @@ export function useCollaborativeEditor({
       ydocRef.current = null;
       awarenessRef.current = null;
     };
-  }, [sessionId, user]);
+  }, [sessionId, user, isReadOnly]);
 
-  // Setup Pusher sync
+  // Setup Pusher sync (skipped entirely in read-only mode)
   useEffect(() => {
-    if (!pusherChannel || !ydoc || !awareness || !isLoaded) {
+    if (isReadOnly || !pusherChannel || !ydoc || !awareness || !isLoaded) {
       return;
     }
 
@@ -177,25 +195,26 @@ export function useCollaborativeEditor({
     providerRef.current = provider;
 
     // Listen to provider events
-    provider.on("status-change", (data: unknown) => {
+    provider.on('status-change', (data: unknown) => {
       const { status } = data as { status: SyncStatus };
       setSyncStatus(status);
       setStatus(status);
     });
 
-    provider.on("remote-update", () => {
+    provider.on('remote-update', () => {
       const now = Date.now();
       setLastSyncedAt(now);
       setConnectionLastSynced(now);
     });
 
     // Bind Pusher events
-    const handleYjsUpdate = (data: {
-      update: number[];
-      userId: string;
-      _senderId?: string;
-    }) => {
-      console.log("📨 Received yjs-update from:", data._senderId || data.userId, "| My userId:", userId);
+    const handleYjsUpdate = (data: { update: number[]; userId: string; _senderId?: string }) => {
+      console.log(
+        '📨 Received yjs-update from:',
+        data._senderId || data.userId,
+        '| My userId:',
+        userId
+      );
       provider.handleRemoteUpdate(data);
     };
 
@@ -208,41 +227,41 @@ export function useCollaborativeEditor({
     };
 
     const handleSubscriptionSucceeded = async () => {
-      console.log("✅ Collaborative editor connected");
-      provider.setSyncStatus("synced");
-      setSyncStatus("synced");
+      console.log('✅ Collaborative editor connected');
+      provider.setSyncStatus('synced');
+      setSyncStatus('synced');
 
       // Resync to get any missed updates
       const remoteState = await fetchYjsStateRef.current(sessionId);
       if (remoteState && remoteState.length > 0) {
         const update = toUint8Array(remoteState);
-        Y.applyUpdate(ydoc, update, "resync");
+        Y.applyUpdate(ydoc, update, 'resync');
       }
     };
 
     const handleSubscriptionError = () => {
-      console.error("❌ Collaborative editor connection failed");
-      provider.setSyncStatus("error");
-      setSyncStatus("error");
+      console.error('❌ Collaborative editor connection failed');
+      provider.setSyncStatus('error');
+      setSyncStatus('error');
     };
 
-    pusherChannel.bind("yjs-update", handleYjsUpdate);
-    pusherChannel.bind("awareness-update", handleAwarenessUpdate);
-    pusherChannel.bind("pusher:subscription_succeeded", handleSubscriptionSucceeded);
-    pusherChannel.bind("pusher:subscription_error", handleSubscriptionError);
+    pusherChannel.bind('yjs-update', handleYjsUpdate);
+    pusherChannel.bind('awareness-update', handleAwarenessUpdate);
+    pusherChannel.bind('pusher:subscription_succeeded', handleSubscriptionSucceeded);
+    pusherChannel.bind('pusher:subscription_error', handleSubscriptionError);
 
     // Check if channel is already subscribed (event already fired before we bound)
     if (pusherChannel.subscribed) {
-      console.log("✅ Channel already subscribed, triggering sync");
+      console.log('✅ Channel already subscribed, triggering sync');
       handleSubscriptionSucceeded();
     }
 
     // Cleanup
     return () => {
-      pusherChannel.unbind("yjs-update", handleYjsUpdate);
-      pusherChannel.unbind("awareness-update", handleAwarenessUpdate);
-      pusherChannel.unbind("pusher:subscription_succeeded", handleSubscriptionSucceeded);
-      pusherChannel.unbind("pusher:subscription_error", handleSubscriptionError);
+      pusherChannel.unbind('yjs-update', handleYjsUpdate);
+      pusherChannel.unbind('awareness-update', handleAwarenessUpdate);
+      pusherChannel.unbind('pusher:subscription_succeeded', handleSubscriptionSucceeded);
+      pusherChannel.unbind('pusher:subscription_error', handleSubscriptionError);
 
       provider.destroy();
       providerRef.current = null;
@@ -258,26 +277,23 @@ export function useCollaborativeEditor({
     setConnectionLastSynced,
   ]);
 
-  // Auto-save periodically
+  // Auto-save periodically (skipped in read-only mode)
   useEffect(() => {
-    if (!ydoc || !isLoaded) return;
+    if (isReadOnly || !ydoc || !isLoaded) return;
 
     const save = async () => {
       if (ydocRef.current) {
         try {
           const state = Y.encodeStateAsUpdate(ydocRef.current);
           await saveYjsStateRef.current(sessionId, toNumberArray(state));
-          console.log("💾 Auto-saved Yjs state");
+          console.log('💾 Auto-saved Yjs state');
         } catch (error) {
-          console.error("Failed to auto-save:", error);
+          console.error('Failed to auto-save:', error);
         }
       }
     };
 
-    saveIntervalRef.current = setInterval(
-      save,
-      COLLABORATION_CONFIG.AUTO_SAVE_INTERVAL
-    );
+    saveIntervalRef.current = setInterval(save, COLLABORATION_CONFIG.AUTO_SAVE_INTERVAL);
 
     return () => {
       if (saveIntervalRef.current) {
@@ -286,14 +302,14 @@ export function useCollaborativeEditor({
       // Save on cleanup
       save();
     };
-  }, [sessionId, isLoaded, ydoc]);
+  }, [sessionId, isLoaded, ydoc, isReadOnly]);
 
   // Handle online/offline
   useEffect(() => {
     if (!isOnline) {
-      setSyncStatus("offline");
-    } else if (syncStatus === "offline" && providerRef.current) {
-      setSyncStatus("syncing");
+      setSyncStatus('offline');
+    } else if (syncStatus === 'offline' && providerRef.current) {
+      setSyncStatus('syncing');
       providerRef.current.forceResync(() => fetchYjsStateRef.current(sessionId));
     }
   }, [isOnline, syncStatus, sessionId]);

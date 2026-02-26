@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * TldrawCanvas Component
@@ -10,14 +10,14 @@
  * - Connection status reported to parent via callbacks
  */
 
-import { cn } from "@/lib/utils";
-import { useSyncDemo } from "@tldraw/sync";
-import { Loader2, Paintbrush } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Tldraw } from "tldraw";
-import "tldraw/tldraw.css";
+import { cn } from '@/lib/utils';
+import { useSyncDemo } from '@tldraw/sync';
+import { Loader2, Lock, Paintbrush } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Tldraw } from 'tldraw';
+import 'tldraw/tldraw.css';
 
-import type { SystemStatus } from "@/lib/hooks/use-connection-orchestrator";
+import type { SystemStatus } from '@/lib/hooks/use-connection-orchestrator';
 
 interface TldrawCanvasProps {
   /** Session ID used as room ID for sync */
@@ -54,14 +54,14 @@ export function TldrawCanvas({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Use tldraw sync demo for collaboration
   // The roomId should be unique per session
   const roomId = `studyspace-${sessionId}`;
 
-  // useSyncDemo returns a store that handles all sync
+  // useSyncDemo loads persisted content from the tldraw sync server.
+  // We always use it (even for ended sessions) so the canvas content is visible.
+  // Read-only is enforced via pointer-events-none and hideUi.
   const store = useSyncDemo({
     roomId,
-    // User info for presence
     userInfo: {
       id: userId,
       name: userName,
@@ -71,19 +71,19 @@ export function TldrawCanvas({
   // Track connection status
   useEffect(() => {
     if (!store) {
-      onConnectionStatusChange?.("connecting");
+      onConnectionStatusChange?.('connecting');
       return;
     }
 
     // Store is ready, we're connected
     setIsLoading(false);
-    onConnectionStatusChange?.("connected");
+    onConnectionStatusChange?.('connected');
     setHasError(false);
 
     // Listen for connection issues
     const handleError = () => {
       setHasError(true);
-      onConnectionStatusChange?.("error");
+      onConnectionStatusChange?.('error');
     };
 
     return () => {
@@ -96,25 +96,25 @@ export function TldrawCanvas({
     // Add event listener for adding images
     const handleAddImage = (e: CustomEvent<{ url: string; name: string; mimeType: string }>) => {
       const { url, name, mimeType } = e.detail;
-      
-      if (!mimeType.startsWith("image/")) {
+
+      if (!mimeType.startsWith('image/')) {
         return; // Only images for now
       }
 
       const assetId = `asset:${url}` as any;
-      
+
       // Check if asset already exists
       if (!editor.getAsset(assetId)) {
         editor.createAssets([
           {
             id: assetId,
-            type: "image",
-            typeName: "asset",
+            type: 'image',
+            typeName: 'asset',
             props: {
               name: name,
               src: url,
               w: 500, // Default width, Tldraw will resize if we knew dimensions
-              h: 500, 
+              h: 500,
               mimeType: mimeType,
               isAnimated: false,
             },
@@ -126,29 +126,29 @@ export function TldrawCanvas({
       // Create the shape
       editor.createShapes([
         {
-          type: "image",
+          type: 'image',
           x: 100, // Default position
           y: 100,
           props: {
             assetId: assetId,
-            w: 500, 
+            w: 500,
             h: 500,
           },
         },
       ]);
-      
+
       // Center on the new shape
       // editor.zoomToSelection(); // Optional
     };
 
-    window.addEventListener("tldraw-add-image", handleAddImage as EventListener);
-    
+    window.addEventListener('tldraw-add-image', handleAddImage as EventListener);
+
     // Store cleanup function on the editor instance if possible, or just return cleanup for useEffect
     // But handleMount is a callback.
     // Better to use a separate useEffect if we had reference to editor.
     // Since we don't hold editor ref in state, let's attach to window here but we need cleanup.
     // Tldraw onMount gives us the editor. We should probably store it in a Ref or just use the event listener approach carefully.
-    
+
     // We'll attach the listener to the window object and clean it up when the component unmounts
     // But we need 'editor' in the scope.
     (window as any)._tldrawAddImageHandler = handleAddImage;
@@ -156,10 +156,10 @@ export function TldrawCanvas({
 
   useEffect(() => {
     return () => {
-       if ((window as any)._tldrawAddImageHandler) {
-         window.removeEventListener("tldraw-add-image", (window as any)._tldrawAddImageHandler);
-         delete (window as any)._tldrawAddImageHandler;
-       }
+      if ((window as any)._tldrawAddImageHandler) {
+        window.removeEventListener('tldraw-add-image', (window as any)._tldrawAddImageHandler);
+        delete (window as any)._tldrawAddImageHandler;
+      }
     };
   }, []);
 
@@ -180,7 +180,7 @@ export function TldrawCanvas({
     return (
       <div className="flex h-full items-center justify-center bg-white dark:bg-neutral-950">
         <div className="text-center text-muted-foreground p-8">
-          <Paintbrush className={cn("mx-auto h-12 w-12 mb-4 text-red-500")} />
+          <Paintbrush className={cn('mx-auto h-12 w-12 mb-4 text-red-500')} />
           <h3 className="text-lg font-medium mb-2">Erreur de connexion</h3>
           <p className="text-sm">Impossible de se connecter au canvas collaboratif.</p>
         </div>
@@ -191,25 +191,24 @@ export function TldrawCanvas({
   return (
     <div
       className={cn(
-        "relative h-full w-full",
-        !isEnabled && "pointer-events-none opacity-50"
+        'relative h-full w-full',
+        !isEnabled && 'pointer-events-none opacity-50',
+        isEnded && 'pointer-events-none'
       )}
-      onPointerDown={onFocus}
+      onPointerDown={isEnded ? undefined : onFocus}
     >
       <Tldraw
-        store={store}
-        onMount={handleMount}
-        // Hide UI elements if session ended (read-only feeling)
+        store={store ?? undefined}
+        onMount={isEnded ? undefined : handleMount}
+        // Always hide toolbar in ended sessions
         hideUi={isEnded}
-        // Tldraw handles its own persistence via the sync store
       />
 
-      {/* Read-only overlay for ended sessions */}
+      {/* Read-only badge for ended sessions */}
       {isEnded && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-black/60 text-white px-4 py-2 rounded-lg text-sm">
-            Session terminée - Mode lecture seule
-          </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-900/80 text-white px-3 py-1.5 rounded-full text-xs font-medium pointer-events-none select-none backdrop-blur-sm">
+          <Lock className="h-3 w-3" />
+          Session archivée — lecture seule
         </div>
       )}
     </div>
@@ -230,7 +229,7 @@ export function TldrawCanvasPlaceholder({
   return (
     <div className="flex h-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
       <div className="text-center text-muted-foreground p-8">
-        <Paintbrush className={cn("mx-auto h-16 w-16 mb-4", panelColors?.icon)} />
+        <Paintbrush className={cn('mx-auto h-16 w-16 mb-4', panelColors?.icon)} />
         <h3 className="text-lg font-medium mb-2">Canvas collaboratif</h3>
         <p className="text-sm max-w-md">
           Dessinez, annotez et collaborez en temps réel avec les autres membres de la session.

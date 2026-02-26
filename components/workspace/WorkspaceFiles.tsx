@@ -1,21 +1,13 @@
-"use client";
+'use client';
 
-import { useFiles } from "@/lib/hooks/use-files";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileViewerModal } from "@/components/ui/file-viewer-modal";
-import {
-  FileText,
-  Image as ImageIcon,
-  Loader2,
-  Trash2,
-  Upload,
-  Download,
-  Eye,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useFiles } from '@/lib/hooks/use-files';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileViewerModal } from '@/components/ui/file-viewer-modal';
+import { FileText, Image as ImageIcon, Loader2, Trash2, Upload, Download, Eye } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface WorkspaceFilesProps {
   workspaceId: string;
@@ -31,29 +23,24 @@ function formatFileSize(bytes: number): string {
 }
 
 function getFileIcon(mimeType: string) {
-  if (mimeType.startsWith("image/")) {
+  if (mimeType.startsWith('image/')) {
     return <ImageIcon className="h-5 w-5" />;
   }
   return <FileText className="h-5 w-5" />;
 }
 
-export function WorkspaceFiles({
-  workspaceId,
-  isOwner,
-  currentUserId,
-}: WorkspaceFilesProps) {
+export function WorkspaceFiles({ workspaceId, isOwner, currentUserId }: WorkspaceFilesProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [viewerFileId, setViewerFileId] = useState<string | null>(null);
 
-  const { files, isLoading, isUploading, fetchFiles, uploadFile, deleteFile } =
-    useFiles();
+  const { files, isLoading, isUploading, fetchFiles, uploadFile, deleteFile } = useFiles();
 
   useEffect(() => {
     fetchFiles(workspaceId);
   }, [workspaceId, fetchFiles]);
 
   // Find viewer file data and index
-  const viewerFileIndex = files.findIndex((f) => f.id === viewerFileId);
+  const viewerFileIndex = files.findIndex(f => f.id === viewerFileId);
   const viewerFile = viewerFileIndex >= 0 ? files[viewerFileIndex] : null;
 
   const handleNext = useCallback(() => {
@@ -73,28 +60,22 @@ export function WorkspaceFiles({
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "application/pdf",
-    ];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Type de fichier non supporté. Utilisez: images ou PDF");
+      toast.error('Type de fichier non supporté. Utilisez: images ou PDF');
       return;
     }
 
     try {
       await uploadFile(workspaceId, file);
-      toast.success("Fichier uploadé");
+      toast.success('Fichier uploadé');
     } catch {
       toast.error("Erreur lors de l'upload");
     }
 
     // Reset input
     if (inputRef.current) {
-      inputRef.current.value = "";
+      inputRef.current.value = '';
     }
   };
 
@@ -103,9 +84,9 @@ export function WorkspaceFiles({
 
     try {
       await deleteFile(fileId);
-      toast.success("Fichier supprimé");
+      toast.success('Fichier supprimé');
     } catch {
-      toast.error("Erreur lors de la suppression");
+      toast.error('Erreur lors de la suppression');
     }
   };
 
@@ -131,7 +112,7 @@ export function WorkspaceFiles({
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Upload...
+                  Téléversement...
                 </>
               ) : (
                 <>
@@ -149,10 +130,9 @@ export function WorkspaceFiles({
             </div>
           ) : files.length > 0 ? (
             <div className="space-y-2">
-              {files.map((file) => {
-                const isImage = file.mimeType.startsWith("image/");
-                const canDelete =
-                  file.uploadedBy?.id === currentUserId || isOwner;
+              {files.map(file => {
+                const isImage = file.mimeType.startsWith('image/');
+                const canDelete = file.uploadedBy?.id === currentUserId || isOwner;
 
                 return (
                   <div
@@ -173,8 +153,8 @@ export function WorkspaceFiles({
                       ) : (
                         <div
                           className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                            "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+                            'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                           )}
                         >
                           {getFileIcon(file.mimeType)}
@@ -183,12 +163,15 @@ export function WorkspaceFiles({
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{file.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFileSize(file.size)} · Par {file.uploadedBy?.name || "Inconnu"}
+                          {formatFileSize(file.size)} · Par {file.uploadedBy?.name || 'Inconnu'}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="flex items-center gap-1 shrink-0"
+                      onClick={e => e.stopPropagation()}
+                    >
                       {/* View button */}
                       <Button
                         variant="ghost"
@@ -200,12 +183,7 @@ export function WorkspaceFiles({
                       </Button>
 
                       {/* Download */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        asChild
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                         <a href={file.url} download={file.name} target="_blank">
                           <Download className="h-4 w-4" />
                         </a>

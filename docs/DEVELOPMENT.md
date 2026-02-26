@@ -2,9 +2,9 @@
 
 ## 📋 Contexte du projet
 
-**Nom du projet :** StudySpace  
-**Type :** Plateforme web de collaboration pour étudiants (MVP Beta)  
-**Stack technique :** Next.js 16 (canary), React 18/19, TypeScript, TailwindCSS, shadcn/ui, Better Auth, PostgreSQL  
+**Nom du projet :** StudySpace
+**Type :** Plateforme web de collaboration pour étudiants (MVP Beta)
+**Stack technique :** Next.js 16 (canary), React 18/19, TypeScript, TailwindCSS, shadcn/ui, Better Auth, PostgreSQL
 **Objectif :** Permettre aux étudiants de réviser ensemble à distance avec visio + tableau blanc + éditeur d'équations + gestion de fichiers dans une interface unifiée.
 
 **Statut actuel :** Phase de développement MVP
@@ -13,7 +13,10 @@
 - ✅ Authentification Better Auth + Zustand
 - ✅ Workspaces collaboratifs
 - ✅ Tableau blanc temps réel
-- ⏳ Éditeur d'équations
+- ✅ Audio temps réel (Agora RTC)
+- ✅ Gestion de fichiers (Vercel Blob)
+- ⏳ Éditeur d'équations (MathLive)
+- ⏳ Vidéo (Agora RTC)
 
 ---
 
@@ -37,9 +40,12 @@
 
 - **Backend :** Next.js API Routes
 - **Database :** PostgreSQL (via Neon ou self-hosted)
-- **ORM :** Prisma 5.x / 6.x
+- **ORM :** Prisma 7.x
 - **Auth :** Better Auth (email/password)
-- **Storage :** Cloudflare R2 / AWS S3 (future)
+- **Temps réel :** Pusher (WebSocket)
+- **Audio :** Agora RTC SDK (canaux audio par workspace)
+- **Storage :** Vercel Blob (upload/download de fichiers)
+- **Email :** Resend + React Email
 - **Proxy :** Next.js 16 Proxy (remplace middleware)
 
 ---
@@ -52,7 +58,7 @@
 
 ```typescript
 const userId = 123;
-const workspaceName = "Maths";
+const workspaceName = 'Maths';
 function createWorkspace() {}
 ```
 
@@ -60,7 +66,7 @@ function createWorkspace() {}
 
 ```typescript
 interface User {}
-type WorkspaceTag = "maths" | "info";
+type WorkspaceTag = 'maths' | 'info';
 ```
 
 **Constantes globales :** `UPPER_SNAKE_CASE`
@@ -160,15 +166,15 @@ const { data }: AxiosResponse<ApiResponse<Workspace>> = await axios.get();
 
 ```typescript
 // ✅ BON
-const { data } = await axios.post("/api/auth/sign-in/email", {
+const { data } = await axios.post('/api/auth/sign-in/email', {
   email,
   password,
 });
 
 // ❌ NE PAS utiliser fetch
-const response = await fetch("/api/auth/sign-in/email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
+const response = await fetch('/api/auth/sign-in/email', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ email, password }),
 });
 ```
@@ -187,11 +193,11 @@ export const useMyStore = create<MyStore>()(
         data: null,
 
         // Actions
-        setData: (data) => set({ data }),
+        setData: data => set({ data }),
       }),
-      { name: "my-storage" }
+      { name: 'my-storage' }
     ),
-    { name: "MyStore" }
+    { name: 'MyStore' }
   )
 );
 
@@ -279,24 +285,24 @@ Easing: ease-out par défaut
 
 ### TOUJOURS
 
-✅ **TypeScript strict** - Pas de `any`, typer toutes les fonctions  
-✅ **Axios pour API calls** - Pas de fetch  
-✅ **Zustand pour state global** - Pas de React Context pour auth  
-✅ **"use client"** quand nécessaire - Hooks, events, browser APIs  
-✅ **Accessibilité** - aria-labels, keyboard navigation  
-✅ **Responsive** - Mobile-first  
-✅ **Error handling** - try/catch avec messages clairs  
+✅ **TypeScript strict** - Pas de `any`, typer toutes les fonctions
+✅ **Axios pour API calls** - Pas de fetch
+✅ **Zustand pour state global** - Pas de React Context pour auth
+✅ **"use client"** quand nécessaire - Hooks, events, browser APIs
+✅ **Accessibilité** - aria-labels, keyboard navigation
+✅ **Responsive** - Mobile-first
+✅ **Error handling** - try/catch avec messages clairs
 ✅ **console.log pour debugging** - Avec emojis pour tracer (📨, ✅, ❌, 🔐, 💾, 💥)
 
 ### JAMAIS
 
-❌ **fetch()** - Utiliser axios  
-❌ **React Context pour auth** - Utiliser Zustand  
-❌ **`any` en TypeScript** - Toujours typer  
-❌ **Secrets en dur** - Utiliser `.env.local`  
-❌ **Code dupliqué** - Extraire en fonctions/composants  
-❌ **Composants > 200 lignes** - Découper  
-❌ **Inline styles** - Utiliser Tailwind  
+❌ **fetch()** - Utiliser axios
+❌ **React Context pour auth** - Utiliser Zustand
+❌ **`any` en TypeScript** - Toujours typer
+❌ **Secrets en dur** - Utiliser `.env.local`
+❌ **Code dupliqué** - Extraire en fonctions/composants
+❌ **Composants > 200 lignes** - Découper
+❌ **Inline styles** - Utiliser Tailwind
 ❌ **`bg-gradient-*`** - Utiliser `bg-linear-*`
 
 ---
@@ -333,12 +339,12 @@ Easing: ease-out par défaut
 ### Auth Client Usage (Better Auth)
 
 ```typescript
-import { authClient } from "@/lib/auth/client";
+import { authClient } from '@/lib/auth/client';
 
 // Sign In
-await authClient.signIn.email({ 
-  email, 
-  password 
+await authClient.signIn.email({
+  email,
+  password,
 });
 
 // Sign Out
@@ -351,16 +357,16 @@ const { data: session } = await authClient.useSession();
 ### API Route avec Protection (Exemple)
 
 ```typescript
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
 
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response('Unauthorized', { status: 401 });
   }
 
   // Business logic...
@@ -398,9 +404,11 @@ export async function POST(request: Request) {
 - Landing page ✅
 - Auth Better Auth ✅
 - Workspaces collaboratifs ✅
-- Tableau blanc ✅
-- Visio ⏳
-- Partage fichiers ⏳
+- Tableau blanc temps réel ✅
+- Audio temps réel (Agora) ✅
+- Gestion de fichiers (Vercel Blob) ✅
+- Éditeur d'équations (MathLive) ⏳
+- Vidéo (Agora RTC) ⏳
 
 **Success Metrics :**
 
