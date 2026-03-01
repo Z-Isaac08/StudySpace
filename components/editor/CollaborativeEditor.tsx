@@ -40,6 +40,8 @@ interface CollaborativeEditorProps {
   isReadOnly?: boolean;
   /** Callback when user focuses the editor */
   onFocus?: () => void;
+  /** Callback when editor content changes */
+  onChange?: (content: string) => void;
 }
 
 export function CollaborativeEditor({
@@ -51,6 +53,7 @@ export function CollaborativeEditor({
   pusherChannel,
   isReadOnly = false,
   onFocus,
+  onChange,
 }: CollaborativeEditorProps) {
   const { fetchYjsState, saveYjsState, broadcastEvent } = useStudySession();
 
@@ -105,6 +108,11 @@ export function CollaborativeEditor({
         attributes: {
           class: 'prose prose-sm sm:prose-base max-w-none focus:outline-none h-full px-4 py-3',
         },
+      },
+      onUpdate: ({ editor }) => {
+        if (onChange) {
+          onChange(editor.getHTML());
+        }
       },
     },
     [ydoc, provider, isReadOnly] // Recreate editor when ydoc, provider, or mode changes

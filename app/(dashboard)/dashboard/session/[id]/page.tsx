@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, NotebookPen, Paintbrush, Type, X } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Channel } from 'pusher-js';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // Dynamic import for TldrawCanvas to avoid SSR issues
 const TldrawCanvas = dynamic(
@@ -115,20 +115,30 @@ export default function SessionPage() {
   const { confirm, ConfirmationDialog } = useConfirm();
 
   const [editorContent, setEditorContent] = useState('');
+  const editorContentRef = useRef(editorContent);
+
   const [pusherChannel, setPusherChannel] = useState<Channel | null>(null);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFilesOpen, setIsFilesOpen] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [finalStats, setFinalStats] = useState<{
+    memberCount: number;
+    wordCount: number;
+    duration: string;
+  } | null>(null);
 
-  // Compute word count from editor HTML content
-  const wordCount = useMemo(() => {
-    if (!editorContent) return 0;
+  // Helper to compute word count from HTML content
+  const calculateWordCount = (content: string) => {
+    if (!content) return 0;
     // Strip HTML tags, then count whitespace-separated words
-    const text = editorContent.replace(/<[^>]*>/g, ' ').trim();
+    const text = content.replace(/<[^>]*>/g, ' ').trim();
     if (!text) return 0;
     return text.split(/\s+/).filter(Boolean).length;
-  }, [editorContent]);
+  };
+
+  // Compute word count from editor state
+  const wordCount = useMemo(() => calculateWordCount(editorContent), [editorContent]);
 
   // Connection orchestrator for coordinating Pusher and Tldraw connections
   const {
@@ -218,8 +228,17 @@ export default function SessionPage() {
     });
 
     // Listen for session terminated event (server event, no "client-" prefix)
-    channel.bind('session-terminated', () => {
+    channel.bind('session-terminated', (data: { memberCount?: number; wordCount?: number }) => {
       toast.info('La session a été terminée');
+
+      if (data.memberCount !== undefined) {
+        setFinalStats({
+          memberCount: data.memberCount,
+          wordCount: data.wordCount || 0,
+          duration: getDuration(), // This will be calculated on the receiver side
+        });
+      }
+
       // Re-fetch so isEnded becomes true, then show summary
       fetchStudySession(sessionId);
       setShowSummary(true);
@@ -247,6 +266,7 @@ export default function SessionPage() {
       typeof currentStudySession.editorState.content === 'string'
     ) {
       setEditorContent(currentStudySession.editorState.content);
+      editorContentRef.current = currentStudySession.editorState.content;
     }
     // Note: Canvas state is now handled by tldraw sync - no need to restore manually
   }, [currentStudySession]);
@@ -267,8 +287,8 @@ export default function SessionPage() {
       const confirmed = await confirm({
         title: 'Dernière personne dans la session',
         description:
-          'Vous êtes la dernière personne dans cette session. La quitter va la terminer automatiquement. Continuer ?',
-        confirmText: 'Terminer la session',
+          'Vous êtes la dernière personne dans cette session. La quitter va la terminer automatiquement pour sauvegarder votre travail. Continuer ?',
+        confirmText: 'Terminer et quitter',
         variant: 'destructive',
       });
 
@@ -321,8 +341,12 @@ export default function SessionPage() {
       // Note: Editor auto-saves via useCollaborativeEditor, tldraw via @tldraw/sync
 
       // End session with final state
+      const finalContent = editorContentRef.current;
+      const finalWordCount = calculateWordCount(finalContent);
+      setEditorContent(finalContent);
+
       await endStudySession(sessionId, {
-        editorState: { content: editorContent },
+        editorState: { content: finalContent },
       });
 
       // Broadcast termination to all members via server
@@ -330,8 +354,16 @@ export default function SessionPage() {
         const channelName = `presence-session-${sessionId}`;
         await broadcastEvent(channelName, 'session-terminated', {
           odlUserId: user?.id,
+          memberCount: Math.max(members.length, 1),
+          wordCount: finalWordCount,
         });
       }
+
+      setFinalStats({
+        memberCount: Math.max(members.length, 1),
+        wordCount: finalWordCount,
+        duration: getDuration(),
+      });
 
       toast.success(
         isAutoTerminate ? 'Session terminée automatiquement' : 'Session terminée avec succès'
@@ -397,6 +429,7 @@ export default function SessionPage() {
           members={members}
           currentUserId={user?.id || ''}
           isEnded={isEnded}
+          isCreator={currentStudySession.createdById === user?.id}
           isSaving={isSaving}
           isEnding={isEnding}
           isNotesOpen={isNotesOpen}
@@ -491,6 +524,9 @@ export default function SessionPage() {
                         pusherChannel={isEnded ? null : pusherChannel}
                         isReadOnly={isEnded}
                         onFocus={isEnded ? undefined : handleEditorFocus}
+                        onChange={content => {
+                          editorContentRef.current = content;
+                        }}
                         onSave={
                           isEnded
                             ? undefined
@@ -556,9 +592,9 @@ export default function SessionPage() {
           <PostSessionSummary
             workspaceName={currentStudySession.workspace?.name || 'Session'}
             workspaceTag={workspaceTag}
-            duration={getDuration()}
-            memberCount={Math.max(members.length, 1)}
-            wordCount={wordCount}
+            duration={finalStats?.duration || getDuration()}
+            memberCount={finalStats?.memberCount || Math.max(members.length, 1)}
+            wordCount={finalStats?.wordCount ?? wordCount}
             onViewReadOnly={() => setShowSummary(false)}
             onBackToWorkspace={() =>
               router.push(`/dashboard/workspace/${currentStudySession.workspaceId}`)

@@ -1,14 +1,14 @@
-import { getErrorMessage } from "@/lib/types";
-import axios from "axios";
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import { getErrorMessage } from '@/lib/types';
+import axios from 'axios';
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
 export interface Workspace {
   id: string;
   name: string;
   tag: string;
   inviteCode: string;
-  userRole: "OWNER" | "MEMBER";
+  userRole: 'OWNER' | 'MEMBER';
   createdAt: string;
   updatedAt: string;
   _count: {
@@ -80,7 +80,7 @@ interface WorkspaceActions {
     tag?: string;
     search?: string;
     sortBy?: string;
-    sortOrder?: "asc" | "desc";
+    sortOrder?: 'asc' | 'desc';
   }) => Promise<void>;
   fetchWorkspaceDetail: (id: string) => Promise<WorkspaceDetail>;
   createWorkspace: (data: { name: string; tag: string }) => Promise<Workspace>;
@@ -91,7 +91,7 @@ interface WorkspaceActions {
   updateMemberRole: (
     workspaceId: string,
     userId: string,
-    role: "OWNER" | "MEMBER"
+    role: 'OWNER' | 'MEMBER'
   ) => Promise<void>;
   clearWorkspaces: () => void;
   clearCurrentWorkspace: () => void;
@@ -101,7 +101,7 @@ type WorkspaceStore = WorkspaceState & WorkspaceActions;
 
 export const useWorkspaceStore = create<WorkspaceStore>()(
   devtools(
-    (set) => ({
+    set => ({
       // Initial state
       workspaces: [],
       currentWorkspace: null,
@@ -115,18 +115,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         try {
           const queryParams = new URLSearchParams();
 
-          if (params.page) queryParams.append("page", params.page.toString());
-          if (params.limit)
-            queryParams.append("limit", params.limit.toString());
-          if (params.tag) queryParams.append("tag", params.tag);
-          if (params.search) queryParams.append("search", params.search);
-          if (params.sortBy) queryParams.append("sortBy", params.sortBy);
-          if (params.sortOrder)
-            queryParams.append("sortOrder", params.sortOrder);
+          if (params.page) queryParams.append('page', params.page.toString());
+          if (params.limit) queryParams.append('limit', params.limit.toString());
+          if (params.tag) queryParams.append('tag', params.tag);
+          if (params.search) queryParams.append('search', params.search);
+          if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+          if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-          const { data } = await axios.get(
-            `/api/workspaces?${queryParams.toString()}`
-          );
+          const { data } = await axios.get(`/api/workspaces?${queryParams.toString()}`);
 
           set({
             workspaces: data.data.data || [],
@@ -143,14 +139,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       },
 
       // Create workspace
-      createWorkspace: async (workspaceData) => {
+      createWorkspace: async workspaceData => {
         set({ isLoading: true, error: null });
         try {
-          const { data } = await axios.post("/api/workspaces", workspaceData);
+          const { data } = await axios.post('/api/workspaces', workspaceData);
           const newWorkspace = data.data;
 
           // Add to local state
-          set((state) => ({
+          set(state => ({
             workspaces: [newWorkspace, ...state.workspaces],
             isLoading: false,
           }));
@@ -166,14 +162,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       },
 
       // Delete workspace
-      deleteWorkspace: async (id) => {
+      deleteWorkspace: async id => {
         set({ isLoading: true, error: null });
         try {
           await axios.delete(`/api/workspaces/${id}`);
 
           // Remove from local state
-          set((state) => ({
-            workspaces: state.workspaces.filter((w) => w.id !== id),
+          set(state => ({
+            workspaces: state.workspaces.filter(w => w.id !== id),
             isLoading: false,
           }));
         } catch (error: unknown) {
@@ -186,16 +182,16 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       },
 
       // Join workspace
-      joinWorkspace: async (inviteCode) => {
+      joinWorkspace: async inviteCode => {
         set({ isLoading: true, error: null });
         try {
-          const { data } = await axios.post("/api/workspaces/join", {
+          const { data } = await axios.post('/api/workspaces/join', {
             inviteCode: inviteCode.toUpperCase(),
           });
-          const newWorkspace = data.data;
+          const newWorkspace = data.data.workspace;
 
           // Add to local state
-          set((state) => ({
+          set(state => ({
             workspaces: [newWorkspace, ...state.workspaces],
             isLoading: false,
           }));
@@ -211,7 +207,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       },
 
       // Fetch workspace detail
-      fetchWorkspaceDetail: async (id) => {
+      fetchWorkspaceDetail: async id => {
         set({ isLoading: true, error: null });
         try {
           const { data } = await axios.get(`/api/workspaces/${id}`);
@@ -250,9 +246,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       // Remove member from workspace
       removeMember: async (workspaceId, userId) => {
         try {
-          await axios.delete(
-            `/api/workspaces/${workspaceId}/members/${userId}`
-          );
+          await axios.delete(`/api/workspaces/${workspaceId}/members/${userId}`);
 
           // Refresh workspace detail
           const { data } = await axios.get(`/api/workspaces/${workspaceId}`);
@@ -294,6 +288,6 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         set({ currentWorkspace: null });
       },
     }),
-    { name: "WorkspaceStore" }
+    { name: 'WorkspaceStore' }
   )
 );

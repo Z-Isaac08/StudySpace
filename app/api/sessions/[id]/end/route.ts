@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from '@/generated/prisma/client';
 import {
   errorResponse,
   forbiddenResponse,
@@ -6,14 +6,14 @@ import {
   successResponse,
   unauthorizedResponse,
   validationErrorResponse,
-} from "@/lib/api-response";
-import { getCurrentUser } from "@/lib/auth/session";
-import { logger } from "@/lib/logger";
-import prisma from "@/lib/prisma";
-import { getPusherServer } from "@/lib/pusher/server";
-import { getErrorMessage } from "@/lib/types";
-import { EndStudySessionSchema } from "@/lib/validations";
-import { NextRequest } from "next/server";
+} from '@/lib/api-response';
+import { getCurrentUser } from '@/lib/auth/session';
+import { logger } from '@/lib/logger';
+import prisma from '@/lib/prisma';
+import { getPusherServer } from '@/lib/pusher/server';
+import { getErrorMessage } from '@/lib/types';
+import { EndStudySessionSchema } from '@/lib/validations';
+import { NextRequest } from 'next/server';
 
 type Params = {
   params: Promise<{
@@ -40,19 +40,17 @@ export async function PUT(request: NextRequest, { params }: Params) {
     });
 
     if (!existingstudySession) {
-      return notFoundResponse("studySession introuvable");
+      return notFoundResponse('studySession introuvable');
     }
 
     // Check if user is creator
     if (existingstudySession.createdById !== user.id) {
-      return forbiddenResponse(
-        "Seul le créateur peut terminer la studySession"
-      );
+      return forbiddenResponse('Seul le créateur peut terminer la studySession');
     }
 
     // Check if already ended
     if (existingstudySession.endedAt) {
-      return errorResponse("Cette studySession est déjà terminée", 400);
+      return errorResponse('Cette studySession est déjà terminée', 400);
     }
 
     const body = await request.json();
@@ -100,16 +98,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
       const pusher = getPusherServer();
       await pusher.trigger(
         `private-workspace-${existingstudySession.workspaceId}`,
-        "session-ended",
+        'session-ended',
         { sessionId: id }
       );
     } catch (err) {
-      logger.error("Failed to broadcast session-ended:", err);
+      logger.error('Failed to broadcast session-ended:', err);
     }
 
     return successResponse(studySession);
   } catch (error: unknown) {
-    logger.error("End studySession error:", error);
+    logger.error('End studySession error:', error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }

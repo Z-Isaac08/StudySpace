@@ -1,14 +1,9 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { SessionMember } from "@/lib/hooks/use-session-presence";
-import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { SessionMember } from '@/lib/hooks/use-session-presence';
+import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
   Clock,
@@ -18,10 +13,10 @@ import {
   NotebookPen,
   Save,
   Square,
-} from "lucide-react";
-import Link from "next/link";
-import { SessionPresenceAvatars } from "./SessionPresenceAvatars";
-import { VoiceControls } from "./VoiceControls";
+} from 'lucide-react';
+import Link from 'next/link';
+import { SessionPresenceAvatars } from './SessionPresenceAvatars';
+import { VoiceControls } from './VoiceControls';
 
 interface FloatingSessionHeaderProps {
   workspaceId: string;
@@ -31,6 +26,7 @@ interface FloatingSessionHeaderProps {
   members: SessionMember[];
   currentUserId: string;
   isEnded: boolean;
+  isCreator: boolean;
   isSaving: boolean;
   isEnding: boolean;
   isNotesOpen: boolean;
@@ -50,28 +46,28 @@ interface FloatingSessionHeaderProps {
 
 // Tag accent colors for the header border
 const tagAccentColors: Record<string, string> = {
-  maths: "border-tag-maths/50",
-  info: "border-tag-info/50",
-  physique: "border-tag-physique/50",
-  chimie: "border-tag-chimie/50",
-  svt: "border-success/50",
-  langues: "border-tag-langues/50",
-  droit: "border-tag-droit/50",
-  general: "border-tag-general/50",
-  autre: "border-neutral-400/50",
+  maths: 'border-tag-maths/50',
+  info: 'border-tag-info/50',
+  physique: 'border-tag-physique/50',
+  chimie: 'border-tag-chimie/50',
+  svt: 'border-success/50',
+  langues: 'border-tag-langues/50',
+  droit: 'border-tag-droit/50',
+  general: 'border-tag-general/50',
+  autre: 'border-neutral-400/50',
 };
 
 // Tag dot colors
 const tagDotColors: Record<string, string> = {
-  maths: "bg-tag-maths",
-  info: "bg-tag-info",
-  physique: "bg-tag-physique",
-  chimie: "bg-tag-chimie",
-  svt: "bg-success",
-  langues: "bg-tag-langues",
-  droit: "bg-tag-droit",
-  general: "bg-tag-general",
-  autre: "bg-neutral-400",
+  maths: 'bg-tag-maths',
+  info: 'bg-tag-info',
+  physique: 'bg-tag-physique',
+  chimie: 'bg-tag-chimie',
+  svt: 'bg-success',
+  langues: 'bg-tag-langues',
+  droit: 'bg-tag-droit',
+  general: 'bg-tag-general',
+  autre: 'bg-neutral-400',
 };
 
 export function FloatingSessionHeader({
@@ -82,6 +78,7 @@ export function FloatingSessionHeader({
   members,
   currentUserId,
   isEnded,
+  isCreator,
   isSaving,
   isEnding,
   isNotesOpen,
@@ -97,18 +94,18 @@ export function FloatingSessionHeader({
   voiceError,
   onToggleVoiceMute,
 }: FloatingSessionHeaderProps) {
-  const accentColor = workspaceTag ? tagAccentColors[workspaceTag] : "";
-  const dotColor = workspaceTag ? tagDotColors[workspaceTag] : "";
+  const accentColor = workspaceTag ? tagAccentColors[workspaceTag] : '';
+  const dotColor = workspaceTag ? tagDotColors[workspaceTag] : '';
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-50 flex justify-center p-3">
         <div
           className={cn(
-            "pointer-events-auto flex items-center gap-1 rounded-full",
-            "border-2 bg-background/80 px-2 py-1.5 shadow-lg backdrop-blur-md",
-            "transition-all duration-200",
-            accentColor || "border-border"
+            'pointer-events-auto flex items-center gap-1 rounded-full',
+            'border-2 bg-background/80 px-2 py-1.5 shadow-lg backdrop-blur-md',
+            'transition-all duration-200',
+            accentColor || 'border-border'
           )}
         >
           {/* Back button */}
@@ -129,12 +126,8 @@ export function FloatingSessionHeader({
 
           {/* Workspace name & duration */}
           <div className="flex items-center gap-2 px-2">
-            {dotColor && (
-              <span className={cn("h-2 w-2 rounded-full", dotColor)} />
-            )}
-            <span className="max-w-40 truncate text-sm font-medium">
-              {workspaceName}
-            </span>
+            {dotColor && <span className={cn('h-2 w-2 rounded-full', dotColor)} />}
+            <span className="max-w-40 truncate text-sm font-medium">{workspaceName}</span>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               <span>{duration}</span>
@@ -182,8 +175,8 @@ export function FloatingSessionHeader({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 rounded-full",
-                  isFilesOpen && "bg-accent text-accent-foreground"
+                  'h-8 w-8 rounded-full',
+                  isFilesOpen && 'bg-accent text-accent-foreground'
                 )}
                 onClick={onToggleFiles}
               >
@@ -191,7 +184,7 @@ export function FloatingSessionHeader({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isFilesOpen ? "Fermer les fichiers" : "Fichiers du workspace"}
+              {isFilesOpen ? 'Fermer les fichiers' : 'Fichiers du workspace'}
             </TooltipContent>
           </Tooltip>
 
@@ -202,8 +195,8 @@ export function FloatingSessionHeader({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-8 w-8 rounded-full",
-                  isNotesOpen && "bg-accent text-accent-foreground"
+                  'h-8 w-8 rounded-full',
+                  isNotesOpen && 'bg-accent text-accent-foreground'
                 )}
                 onClick={onToggleNotes}
               >
@@ -211,7 +204,7 @@ export function FloatingSessionHeader({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {isNotesOpen ? "Fermer mes notes" : "Mes notes privées"}
+              {isNotesOpen ? 'Fermer mes notes' : 'Mes notes privées'}
             </TooltipContent>
           </Tooltip>
 
@@ -261,25 +254,27 @@ export function FloatingSessionHeader({
                   <TooltipContent>Quitter la session</TooltipContent>
                 </Tooltip>
 
-                {/* Terminate button */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={onTerminate}
-                      disabled={isEnding}
-                    >
-                      {isEnding ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Square className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Terminer la session</TooltipContent>
-                </Tooltip>
+                {/* Terminate button (Creator only) */}
+                {isCreator && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={onTerminate}
+                        disabled={isEnding}
+                      >
+                        {isEnding ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Terminer pour tout le monde</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </>
           )}

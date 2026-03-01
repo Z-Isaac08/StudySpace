@@ -1,15 +1,15 @@
 import {
-    errorResponse,
-    notFoundResponse,
-    successResponse,
-    unauthorizedResponse,
-    validationErrorResponse,
-} from "@/lib/api-response";
-import { getCurrentUser, isWorkspaceMember } from "@/lib/auth/session";
-import prisma from "@/lib/prisma";
-import { getErrorMessage } from "@/lib/types";
-import { InviteToWorkspaceSchema } from "@/lib/validations";
-import { NextRequest } from "next/server";
+  errorResponse,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+  validationErrorResponse,
+} from '@/lib/api-response';
+import { getCurrentUser, isWorkspaceMember } from '@/lib/auth/session';
+import prisma from '@/lib/prisma';
+import { getErrorMessage } from '@/lib/types';
+import { InviteToWorkspaceSchema } from '@/lib/validations';
+import { NextRequest } from 'next/server';
 
 /**
  * POST /api/workspaces/join
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Check if already member
     const alreadyMember = await isWorkspaceMember(user.id, workspace.id);
     if (alreadyMember) {
-      return errorResponse("Vous êtes déjà membre de ce workspace", 400);
+      return errorResponse('Vous êtes déjà membre de ce workspace', 400);
     }
 
     // Add user as member
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         workspaceId: workspace.id,
-        role: "MEMBER",
+        role: 'MEMBER',
       },
       include: {
         workspace: {
@@ -71,13 +71,16 @@ export async function POST(request: NextRequest) {
 
     return successResponse(
       {
-        workspace: member.workspace,
+        workspace: {
+          ...member.workspace,
+          userRole: member.role,
+        },
         message: `Vous avez rejoint ${workspace.name}`,
       },
       201
     );
   } catch (error: unknown) {
-    console.error("Join workspace error:", error);
+    console.error('Join workspace error:', error);
     return errorResponse(getErrorMessage(error), 500);
   }
 }
