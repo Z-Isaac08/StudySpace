@@ -7,8 +7,21 @@ import { getCurrentUser } from '@/lib/auth/session';
 import prisma from '@/lib/prisma';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
+import { uploadLimiter } from '@/lib/rate-limit';
 
 export async function POST(request: Request): Promise<NextResponse> {
+  // Get IP address for rate limiting
+  const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  
+  // Use the rate limiter (e.g., 5 requests per minute)
+  const { success } = await uploadLimiter.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    );
+  }
+
   const body = (await request.json()) as HandleUploadBody;
 
   try {
@@ -58,6 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             workspaceId,
             filename: pathname,
           }),
+          maximumSizeInBytes: 10 * 1024 * 1024, // 10MB limit
         };
       },
     });
@@ -65,6 +79,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(jsonResponse);
   } catch (error) {
     console.error('[Files] Upload error:', error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    return NextResponse.json(
+      { error: 'An unexpected error occurred during upload. Please try again.' }, 
+      { status: 400 }
+    );
   }
 }
